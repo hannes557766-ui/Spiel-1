@@ -254,8 +254,16 @@ firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics();
 const db = firebase.database();
 
-// ====== GLOBAL PLAYER NAME ======
+// ====== GLOBAL PLAYER NAME & ID ======
 let globalPlayerName = '';
+// Wir generieren eine unsichtbare, einzigartige ID für den Spieler,
+// damit sein Score geupdatet wird und er nicht mehrmals in der Liste steht, 
+// selbst wenn jemand anderes den gleichen Namen wählt!
+let playerId = localStorage.getItem('neonPlayerId');
+if (!playerId) {
+  playerId = 'player_' + Date.now() + '_' + Math.round(Math.random() * 1000000);
+  localStorage.setItem('neonPlayerId', playerId);
+}
 
 function saveInitialName() {
   const input = document.getElementById('player-name-input').value.trim();
@@ -335,11 +343,8 @@ const ACHIEVEMENT_DEFS=[
   {id:'daily',name:'Tages-Athlet',desc:'Tages-Challenge gespielt',icon:'📅'}
 ];
 
-// ====== DUMMY DATA (nur fallback) ======
-const defaultHOF = {easy:[],medium:[],hard:[],extreme:[],daily:[]};
-
 // ====== DATA ======
-let achievements={},prestige=0,hallOfFame={};
+let achievements={},prestige=0;
 let highscores=JSON.parse(localStorage.getItem('neonHighscores'))||{easy:0,medium:0,hard:0,extreme:0};
 
 // ====== REAL-TIME LEADERBOARD ======
@@ -347,18 +352,29 @@ let hofListener = null;
 
 async function saveScoreToFirebase(mode, score) {
   if (score < 10 || !globalPlayerName || globalPlayerName.length < 2) return;
-  let refPath = `leaderboards/${mode}`;
+  
+  // Nutze die eindeutige ID, damit ein Spieler nur 1x pro Liste auftauchen kann
+  let refPath = `leaderboards/${mode}/${playerId}`;
   if (mode === 'daily') {
     const today = getDailyStr();
-    refPath = `dailyLeaderboards/${today}`;
+    refPath = `dailyLeaderboards/${today}/${playerId}`;
   }
-  const newScore = {
-    name: globalPlayerName,
-    score: score,
-    date: new Date().toLocaleDateString('de'),
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  };
-  await db.ref(refPath).push(newScore);
+
+  // Überprüfe den aktuellen Score in der Datenbank
+  const snapshot = await db.ref(refPath).once('value');
+  const currentData = snapshot.val();
+
+  // Nur speichern, wenn noch kein Eintrag vorhanden ist oder der neue Score besser ist
+  if (!currentData || score > currentData.score) {
+    const newScore = {
+      id: playerId, // Für genaue Identifikation speichern
+      name: globalPlayerName,
+      score: score,
+      date: new Date().toLocaleDateString('de'),
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    await db.ref(refPath).set(newScore); // .set() überschreibt den alten Eintrag für diese ID
+  }
 }
 
 function loadLeaderboardRealTime(mode, callback) {
@@ -370,9 +386,11 @@ function loadLeaderboardRealTime(mode, callback) {
     refPath = `dailyLeaderboards/${today}`;
   }
 
+  // Firebase zieht automatisch live die Top 10 Einträge (Sortiert nach Score)
   const ref = db.ref(refPath).orderByChild('score').limitToLast(10);
   hofListener = ref;
 
+  // Der 'value' listener sorgt dafür, dass sich die Liste in Echtzeit aktualisiert
   ref.on('value', snapshot => {
     let list = [];
     snapshot.forEach(child => list.push(child.val()));
@@ -409,7 +427,8 @@ function renderHof(mode){
     document.getElementById('hof-list').innerHTML = list.length===0 
       ? '<p style="opacity:0.4;margin:40px 0;font-size:14px;text-align:center;">Noch keine Einträge – sei der Erste! 🚀</p>'
       : list.map((e,i) => {
-          const isMe = (e.name === globalPlayerName);
+          // Wir prüfen mit der einzigartigen ID, ob du es bist
+          const isMe = (e.id === playerId) || (!e.id && e.name === globalPlayerName);
           return `<div class="hof-entry ${isMe?'is-me':''}"><span class="hof-rank">${medals[i]||'·'}</span><span class="hof-name">${e.name||'Anon'}</span>${e.date?`<span style="font-size:9px;opacity:0.45;margin:0 6px;">${e.date}</span>`:''}<span class="hof-score">${e.score}s</span></div>`;
         }).join('');
   });
@@ -432,13 +451,6 @@ function loadGameData(){
   selectedSkins.sound=localStorage.getItem('selSound')||'classic';
   achievements=JSON.parse(localStorage.getItem('neonAchievements'))||{};
   prestige=parseInt(localStorage.getItem('neonPrestige'))||0;
-  
-  hallOfFame=JSON.parse(localStorage.getItem('neonHOF'));
-  if(!hallOfFame || Object.keys(hallOfFame).length === 0){
-    hallOfFame = defaultHOF;
-    saveGameData();
-  }
-  if(!hallOfFame.daily)hallOfFame.daily=[];
 }
 function saveGameData(){
   localStorage.setItem('neonCoinsPro',totalCoins);
@@ -453,7 +465,6 @@ function saveGameData(){
   localStorage.setItem('selSound',selectedSkins.sound);
   localStorage.setItem('neonAchievements',JSON.stringify(achievements));
   localStorage.setItem('neonPrestige',prestige);
-  localStorage.setItem('neonHOF',JSON.stringify(hallOfFame));
 }
 function getPrestigeMult(){return 1+prestige*0.1;}
 function updateCoinsDisplay(){document.querySelectorAll('#menu-coins,#shop-coins').forEach(el=>el.textContent=totalCoins);}
