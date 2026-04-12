@@ -93,10 +93,9 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 .stat{font-size:13px;opacity:0.9;margin:5px 0;}
 </style>
 
-<!-- === FIREBASE SDKs (compat version für einfache HTML-Datei) === -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -173,7 +172,7 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 
 <div id="hof-overlay" class="overlay" style="display:none;">
   <h1 style="font-size:20px;margin-bottom:10px;color:var(--neon-yellow);">🏆 BESTENLISTE</h1>
-  <p style="font-size:10px;color:#555;margin:0 0 10px;line-height:1.4;">Lokal gespeichert. Top 10 Spieler pro Kategorie!<br>Deine Einträge werden automatisch aktualisiert.</p>
+  <p style="font-size:10px;color:#555;margin:0 0 10px;line-height:1.4;">🌍 <strong>ECHTZEIT GLOBAL</strong> – Top 10 von allen Spielern weltweit!<br>Die Liste aktualisiert sich automatisch live!</p>
   <div class="shop-tabs" style="margin-bottom:10px;">
     <button class="tab-btn" id="htab-easy" onclick="switchHofTab('easy')">Leicht</button>
     <button class="tab-btn active" id="htab-medium" onclick="switchHofTab('medium')">Mittel</button>
@@ -240,7 +239,7 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 <canvas id="gameCanvas"></canvas>
 
 <script>
-// ====== FIREBASE ANALYTICS INITIALISIERUNG (wird automatisch beim Laden der Seite gestartet) ======
+// ====== FIREBASE INITIALISIERUNG (Analytics + Realtime Database) ======
 const firebaseConfig = {
   apiKey: "AIzaSyCs8NPg9dgMwOKAzRfnZ3-XvIpYHKhcauU",
   authDomain: "spiel1-c5245.firebaseapp.com",
@@ -251,9 +250,9 @@ const firebaseConfig = {
   measurementId: "G-FC985N86T5"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics();
+const db = firebase.database();
 
 // ====== GLOBAL PLAYER NAME ======
 let globalPlayerName = '';
@@ -336,34 +335,89 @@ const ACHIEVEMENT_DEFS=[
   {id:'daily',name:'Tages-Athlet',desc:'Tages-Challenge gespielt',icon:'📅'}
 ];
 
-// ====== DUMMY DATA FOR GLOBAL FEELING ======
-const defaultHOF = {
-  easy: [
-    {name:"NeonGod",score:150,date:"01.01.2026"},{name:"CyberNinja",score:110,date:"01.01.2026"},
-    {name:"PixelBot",score:80,date:"01.01.2026"},{name:"GamerX",score:60,date:"01.01.2026"}
-  ],
-  medium: [
-    {name:"NeonGod",score:100,date:"01.01.2026"},{name:"CyberNinja",score:75,date:"01.01.2026"},
-    {name:"PixelBot",score:50,date:"01.01.2026"},{name:"GamerX",score:40,date:"01.01.2026"}
-  ],
-  hard: [
-    {name:"NeonGod",score:60,date:"01.01.2026"},{name:"CyberNinja",score:45,date:"01.01.2026"},
-    {name:"PixelBot",score:30,date:"01.01.2026"},{name:"GamerX",score:25,date:"01.01.2026"}
-  ],
-  extreme: [
-    {name:"NeonGod",score:35,date:"01.01.2026"},{name:"CyberNinja",score:20,date:"01.01.2026"},
-    {name:"PixelBot",score:10,date:"01.01.2026"},{name:"GamerX",score:8,date:"01.01.2026"}
-  ],
-  daily: []
-};
+// ====== DUMMY DATA (nur fallback) ======
+const defaultHOF = {easy:[],medium:[],hard:[],extreme:[],daily:[]};
 
 // ====== DATA ======
 let achievements={},prestige=0,hallOfFame={};
 let highscores=JSON.parse(localStorage.getItem('neonHighscores'))||{easy:0,medium:0,hard:0,extreme:0};
 
+// ====== REAL-TIME LEADERBOARD ======
+let hofListener = null;
+
+async function saveScoreToFirebase(mode, score) {
+  if (score < 10 || !globalPlayerName || globalPlayerName.length < 2) return;
+  let refPath = `leaderboards/${mode}`;
+  if (mode === 'daily') {
+    const today = getDailyStr();
+    refPath = `dailyLeaderboards/${today}`;
+  }
+  const newScore = {
+    name: globalPlayerName,
+    score: score,
+    date: new Date().toLocaleDateString('de'),
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+  await db.ref(refPath).push(newScore);
+}
+
+function loadLeaderboardRealTime(mode, callback) {
+  if (hofListener) hofListener.off();
+
+  let refPath = `leaderboards/${mode}`;
+  if (mode === 'daily') {
+    const today = getDailyStr();
+    refPath = `dailyLeaderboards/${today}`;
+  }
+
+  const ref = db.ref(refPath).orderByChild('score').limitToLast(10);
+  hofListener = ref;
+
+  ref.on('value', snapshot => {
+    let list = [];
+    snapshot.forEach(child => list.push(child.val()));
+    list.sort((a,b) => b.score - a.score);
+    callback(list);
+  });
+}
+
+// ====== HALL OF FAME (ECHTZEIT) ======
+let currentHofTab = 'medium';
+
+function openHof(){
+  document.getElementById('main-menu').style.display='none';
+  document.getElementById('hof-overlay').style.display='block';
+  switchHofTab('medium');
+}
+
+function closeHof(){
+  if(hofListener){hofListener.off();hofListener=null;}
+  document.getElementById('hof-overlay').style.display='none';
+  document.getElementById('main-menu').style.display='block';
+}
+
+function switchHofTab(tab){
+  currentHofTab=tab;
+  document.querySelectorAll('#hof-overlay .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`htab-${tab}`).classList.add('active');
+  renderHof(tab);
+}
+
+function renderHof(mode){
+  loadLeaderboardRealTime(mode, list => {
+    const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+    document.getElementById('hof-list').innerHTML = list.length===0 
+      ? '<p style="opacity:0.4;margin:40px 0;font-size:14px;text-align:center;">Noch keine Einträge – sei der Erste! 🚀</p>'
+      : list.map((e,i) => {
+          const isMe = (e.name === globalPlayerName);
+          return `<div class="hof-entry ${isMe?'is-me':''}"><span class="hof-rank">${medals[i]||'·'}</span><span class="hof-name">${e.name||'Anon'}</span>${e.date?`<span style="font-size:9px;opacity:0.45;margin:0 6px;">${e.date}</span>`:''}<span class="hof-score">${e.score}s</span></div>`;
+        }).join('');
+  });
+}
+
+// ====== GAME DATA ======
 function loadGameData(){
   globalPlayerName = localStorage.getItem('neonPlayerName') || '';
-  
   totalCoins=parseInt(localStorage.getItem('neonCoinsPro'))||0;
   totalXP=parseInt(localStorage.getItem('neonXP'))||0;
   volume=parseFloat(localStorage.getItem('neonVolume')||'0.7');
@@ -430,25 +484,13 @@ let recordBroken=false,enemiesDodged=0,coinsThisRun=0,xpThisRun=0;
 let lastBossScore=-1,bossWarningActive=false,levelBeforeRun=1;
 let pendingBossGaps=[];
 let isDailyMode=false;
-
-// Screen shake
 let shakeMag=0;
-
-// Player trail
 let playerTrail=[];
-
-// Combo
 let combo=0,comboMult=1,lastDodgeTime=0,bestComboRun=0;
 const COMBO_TIMEOUT=2800;
-
-// Power-ups on field
 let powerupItems=[],activePowerUp=null,lastPowerupSpawn=0;
 let hasShield=false,slowActive=false,magnetActive=false;
-
-// Danger indicators
 let dangerIndicators=[];
-
-// Boss tracking per run
 let bossesThisRun=0,countedBossWaves=new Set();
 
 const player={w:58,h:22,x:0,y:0};
@@ -518,45 +560,6 @@ function doPrestige(){
   const mult=Math.round((1+(prestige+1)*0.1)*100)-100;
   if(!confirm(`Prestige ${['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'][prestige]} durchführen?\nLevel wird zurückgesetzt.\nDu behältst alle Münzen & Skins.\n➔ +${mult}% Münzen dauerhaft!`))return;
   prestige++;totalXP=0;saveGameData();updateMenuScores();triggerAchievement('prestige_1');
-}
-
-// ====== HALL OF FAME ======
-let currentHofTab='medium';
-function openHof(){document.getElementById('main-menu').style.display='none';document.getElementById('hof-overlay').style.display='block';switchHofTab('medium');}
-function closeHof(){document.getElementById('hof-overlay').style.display='none';document.getElementById('main-menu').style.display='block';}
-function switchHofTab(tab){currentHofTab=tab;document.querySelectorAll('#hof-overlay .tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById(`htab-${tab}`).classList.add('active');renderHof(tab);}
-function renderHof(mode){
-  const list=hallOfFame[mode]||[];const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
-  document.getElementById('hof-list').innerHTML=list.length===0?'<p style="opacity:0.4;margin:20px 0;font-size:13px;">Noch keine Einträge</p>':list.map((e,i)=>{
-    const isMe = (e.name === globalPlayerName);
-    return `<div class="hof-entry ${isMe ? 'is-me' : ''}"><span class="hof-rank">${medals[i]||'·'}</span><span class="hof-name">${e.name||'Anon'}</span>${e.date?`<span style="font-size:9px;opacity:0.45;margin:0 6px;">${e.date}</span>`:''}<span class="hof-score">${e.score}s</span></div>`;
-  }).join('');
-}
-
-// AUTOMATIC HOF ADDITION
-function tryAddHofScore(mode, sc){
-  if(sc === 0) return;
-  const hof = hallOfFame[mode] || [];
-  const name = globalPlayerName;
-  const date = new Date().toLocaleDateString('de');
-
-  const existingIndex = hof.findIndex(e => e.name === name);
-
-  if (existingIndex !== -1) {
-    if (sc > hof[existingIndex].score) {
-      hof[existingIndex].score = sc;
-      hof[existingIndex].date = date;
-    } else {
-      return;
-    }
-  } else {
-    hof.push({ name, score: sc, date });
-  }
-
-  hof.sort((a,b)=>b.score-a.score);
-  if(hof.length>10) hof.length=10;
-  hallOfFame[mode]=hof;
-  saveGameData();
 }
 
 // ====== DAILY CHALLENGE ======
@@ -800,7 +803,6 @@ function checkCollision(p,e){
   return p.x<e.x+e.w&&p.x+p.w>e.x&&p.y<e.y+e.h&&p.y+p.h>e.y;
 }
 
-// ====== DEATH EFFECT ======
 function handleDeath(){
   state='DYING';cancelAnimationFrame(animationId);
   createParticles(player.x+player.w/2,player.y+player.h/2,55,'#ff00ff',8);
@@ -820,7 +822,6 @@ function handleDeath(){
   deathLoop();
 }
 
-// ====== DRAW ======
 function draw(){
   const isRainbowBg=skins.background.find(s=>s.id===selectedSkins.background)?.isRainbow;
   ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -909,7 +910,7 @@ function drawShape(e){
   else{ctx.fillRect(e.x,e.y,e.w,e.h);}
 }
 
-// ====== GAME OVER ======
+// ====== GAME OVER (mit globalem Echtzeit-Upload) ======
 function gameOver(){
   state='GAMEOVER';cancelAnimationFrame(animationId);
   document.getElementById('boss-warning-display').classList.remove('show');
@@ -949,31 +950,17 @@ function gameOver(){
 
   if(newLv>oldLv)playThemed('levelup');
 
-  setTimeout(()=>{
+  // === ECHTZEIT UPLOAD IN DIE GLOBALE BESTENLISTE ===
+  setTimeout(async () => {
+    const modeToSave = isDailyMode ? 'daily' : currentDifficulty;
+    await saveScoreToFirebase(modeToSave, score);
+
     if(isDailyMode){
       localStorage.setItem('neonDailyDate',getDailyStr());
       localStorage.setItem('neonDailyScore',score);
-      const n = globalPlayerName;
-      const d = new Date().toLocaleDateString('de');
-      if(!hallOfFame.daily)hallOfFame.daily=[];
-      
-      const existing = hallOfFame.daily.findIndex(e => e.name === n);
-      if (existing !== -1) {
-          if (score > hallOfFame.daily[existing].score) {
-              hallOfFame.daily[existing].score = score;
-              hallOfFame.daily[existing].date = d;
-          }
-      } else {
-          hallOfFame.daily.push({name:n,score,date:d});
-      }
-      hallOfFame.daily.sort((a,b)=>b.score-a.score);
-      if(hallOfFame.daily.length>10)hallOfFame.daily.length=10;
-      saveGameData();
       isDailyMode=false;
-    } else {
-      tryAddHofScore(currentDifficulty,score);
     }
-  },800);
+  }, 800);
 }
 
 // ====== PAUSE ======
