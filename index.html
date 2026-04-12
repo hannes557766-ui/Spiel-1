@@ -19,17 +19,14 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 .btn span{display:block;font-size:10px;opacity:0.8;margin-top:2px;text-transform:none;letter-spacing:0;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.65}}
 
-/* INPUT STYLE FOR NAME */
 .neon-input{width:100%;padding:12px;background:rgba(0,255,255,0.05);border:2px solid var(--neon-blue);color:white;border-radius:6px;font-family:monospace;font-size:15px;text-align:center;outline:none;transition:all 0.2s;margin-bottom:12px;}
 .neon-input:focus{background:rgba(0,255,255,0.1);box-shadow:0 0 15px rgba(0,255,255,0.4);}
 
-/* LEVEL BAR */
 #level-bar-wrap{margin-bottom:12px;padding:8px 10px;background:rgba(0,255,255,0.06);border-radius:10px;border:1px solid rgba(0,255,255,0.2);}
 #level-label{font-size:11px;color:var(--neon-blue);font-weight:700;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;}
 .xp-bar-bg{background:#111;border-radius:4px;height:6px;width:100%;overflow:hidden;}
 .xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--neon-blue),var(--neon-pink));border-radius:4px;transition:width 0.6s ease;}
 
-/* IN-GAME UI */
 #ui-ingame{position:absolute;top:0;left:0;width:100%;pointer-events:none;display:none;z-index:20;}
 #ingame-top{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;}
 #score-display{font-size:34px;color:var(--neon-blue);font-family:monospace;text-shadow:0 0 15px var(--neon-blue);letter-spacing:3px;}
@@ -41,17 +38,13 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 #record-alert{color:var(--neon-yellow);font-size:12px;font-weight:700;text-align:center;text-shadow:0 0 15px var(--neon-yellow);animation:recordPulse 1.2s infinite;display:none;}
 @keyframes recordPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
-/* COMBO DISPLAY */
 #combo-display{position:absolute;top:58px;left:50%;transform:translateX(-50%);display:none;pointer-events:none;text-align:center;z-index:21;white-space:nowrap;transition:all 0.15s;}
-
-/* POWER-UP ACTIVE DISPLAY */
 #powerup-display{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);text-align:center;display:none;pointer-events:none;z-index:21;}
 #pu-icon{font-size:22px;line-height:1;}
 #pu-label{font-size:9px;color:#aaa;letter-spacing:1px;margin:2px 0;}
 #pu-bar-wrap{width:90px;height:4px;background:#222;border-radius:2px;margin:0 auto;}
 #pu-bar{height:100%;border-radius:2px;transition:width 0.25s linear;}
 
-/* BOSS WARNING */
 #boss-warning-display{display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:25;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;animation:bossFlash 0.5s infinite;}
 #boss-warning-display.show{display:flex;}
 @keyframes bossFlash{0%,100%{background:rgba(255,0,0,0.05)}50%{background:rgba(255,0,0,0.18)}}
@@ -59,16 +52,9 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 #boss-warning-sub{font-size:16px;color:#ff6666;margin-top:5px;}
 #boss-gap-hint{font-size:12px;color:#00ff00;margin-top:7px;font-weight:700;text-shadow:0 0 12px #00ff00;opacity:0.9;}
 
-/* ACHIEVEMENT TOAST */
 #achievement-toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(20,10,0,0.97);color:#ffd700;padding:9px 18px;border-radius:10px;font-size:12px;text-align:center;z-index:200;display:none;box-shadow:0 0 20px rgba(255,215,0,0.5);max-width:290px;border:2px solid #ffd700;pointer-events:none;}
-
-/* LEVEL UP NOTIF */
 #levelup-notif{display:none;position:absolute;top:70px;left:50%;transform:translateX(-50%);background:rgba(157,0,255,0.9);border:2px solid var(--neon-purple);border-radius:12px;padding:8px 22px;font-size:16px;font-weight:900;color:white;text-shadow:0 0 10px var(--neon-purple);z-index:30;pointer-events:none;white-space:nowrap;}
-
-/* PAUSE */
 #pause-overlay{display:none;position:absolute;z-index:40;padding:36px 26px;}
-
-/* SHOP */
 #shop-overlay{width:400px;max-width:96vw;padding:14px;max-height:92vh;display:flex;flex-direction:column;}
 .shop-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;padding-bottom:9px;border-bottom:2px dashed var(--neon-yellow);flex-shrink:0;}
 .shop-tabs{display:flex;gap:4px;margin-bottom:9px;flex-shrink:0;}
@@ -89,31 +75,28 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 .price-tag{font-size:11px;color:var(--neon-yellow);}
 .shop-footer{flex-shrink:0;margin-top:8px;}
 .scroll-hint{text-align:center;font-size:10px;color:var(--neon-blue);opacity:0.5;margin-bottom:5px;flex-shrink:0;}
-
-/* SETTINGS */
 #settings-overlay{width:320px;max-width:92vw;}
 .settings-row{margin:12px 0;}
 .settings-label{font-size:12px;color:var(--neon-blue);margin-bottom:7px;font-weight:700;display:flex;justify-content:space-between;}
 .vol-slider{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:#333;outline:none;cursor:pointer;touch-action:auto;}
 .vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--neon-blue);cursor:pointer;box-shadow:0 0 10px var(--neon-blue);}
 .vol-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--neon-blue);cursor:pointer;border:none;}
-
-/* HOF */
 #hof-overlay{width:360px;max-width:94vw;max-height:90vh;overflow-y:auto;padding:16px;}
 .hof-entry{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin:4px 0;background:rgba(255,255,255,0.05);border-radius:8px;}
 .hof-entry.is-me{border:1px solid var(--neon-blue);background:rgba(0,255,255,0.08);}
 .hof-rank{font-size:16px;margin-right:8px;min-width:20px;text-align:center;}
 .hof-name{flex:1;text-align:left;font-size:13px;font-weight:bold;}
 .hof-score{font-family:monospace;font-weight:700;font-size:14px;color:var(--neon-blue);}
-
-/* ACHIEVEMENTS */
 #achievements-overlay{width:360px;max-width:94vw;max-height:90vh;overflow-y:auto;padding:16px;}
 .ach-item{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:4px 0;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid transparent;}
 .ach-item.earned{border-color:rgba(157,0,255,0.5);}
-
-/* STAT */
 .stat{font-size:13px;opacity:0.9;margin:5px 0;}
 </style>
+
+<!-- === FIREBASE SDKs (compat version für einfache HTML-Datei) === -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
+
 </head>
 <body>
 
@@ -257,8 +240,20 @@ h1{color:var(--neon-blue);text-shadow:0 0 10px var(--neon-blue),0 0 20px var(--n
 <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d',{alpha:true});
+// ====== FIREBASE ANALYTICS INITIALISIERUNG (wird automatisch beim Laden der Seite gestartet) ======
+const firebaseConfig = {
+  apiKey: "AIzaSyCs8NPg9dgMwOKAzRfnZ3-XvIpYHKhcauU",
+  authDomain: "spiel1-c5245.firebaseapp.com",
+  projectId: "spiel1-c5245",
+  storageBucket: "spiel1-c5245.firebasestorage.app",
+  messagingSenderId: "872898414984",
+  appId: "1:872898414984:web:05b95e2692113acb14523d",
+  measurementId: "G-FC985N86T5"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const analytics = firebase.analytics();
 
 // ====== GLOBAL PLAYER NAME ======
 let globalPlayerName = '';
@@ -289,7 +284,7 @@ function openSettings(){
   const p=Math.round(volume*100);
   document.getElementById('vol-slider').value=p;
   document.getElementById('vol-pct').textContent=p+'%';
-  document.getElementById('settings-name-input').value = globalPlayerName; // set current name in settings
+  document.getElementById('settings-name-input').value = globalPlayerName;
   updateMuteBtn();
 }
 function closeSettings(){document.getElementById('settings-overlay').style.display='none';document.getElementById('main-menu').style.display='block';}
@@ -385,7 +380,6 @@ function loadGameData(){
   prestige=parseInt(localStorage.getItem('neonPrestige'))||0;
   
   hallOfFame=JSON.parse(localStorage.getItem('neonHOF'));
-  // Wenn HOF leer ist (neuer Spieler), fülle mit Dummy-Daten, damit es wie eine globale Liste aussieht
   if(!hallOfFame || Object.keys(hallOfFame).length === 0){
     hallOfFame = defaultHOF;
     saveGameData();
@@ -539,14 +533,13 @@ function renderHof(mode){
   }).join('');
 }
 
-// AUTOMATIC HOF ADDITION (NO PROMPT)
+// AUTOMATIC HOF ADDITION
 function tryAddHofScore(mode, sc){
   if(sc === 0) return;
   const hof = hallOfFame[mode] || [];
   const name = globalPlayerName;
   const date = new Date().toLocaleDateString('de');
 
-  // Prüfen ob Nutzer schon drin ist
   const existingIndex = hof.findIndex(e => e.name === name);
 
   if (existingIndex !== -1) {
@@ -554,14 +547,12 @@ function tryAddHofScore(mode, sc){
       hof[existingIndex].score = sc;
       hof[existingIndex].date = date;
     } else {
-      return; // Nicht besser als eigener alter Rekord
+      return;
     }
   } else {
-    // Neuer Spieler-Eintrag
     hof.push({ name, score: sc, date });
   }
 
-  // Sortieren und auf Top 10 begrenzen
   hof.sort((a,b)=>b.score-a.score);
   if(hof.length>10) hof.length=10;
   hallOfFame[mode]=hof;
@@ -582,7 +573,7 @@ function startDailyChallenge(){
   if(localStorage.getItem('neonDailyDate')===todayStr){const sc=localStorage.getItem('neonDailyScore')||0;alert(`Du hast die heutige Challenge schon gespielt!\nDein Score: ${sc}s\nKomm morgen wieder! 📅`);return;}
   isDailyMode=true;
   triggerAchievement('daily');
-  startGame('hard'); // Daily = hard
+  startGame('hard');
   document.getElementById('score-display').style.color='var(--neon-orange)';
 }
 
@@ -667,7 +658,7 @@ function startGame(mode){
   enemiesDodged=0;coinsThisRun=0;xpThisRun=0;bestComboRun=0;bossesThisRun=0;
   combo=0;comboMult=1;lastDodgeTime=0;
   activePowerUp=null;hasShield=false;slowActive=false;magnetActive=false;
-  lastPowerupSpawn=Date.now()+15000; // first power-up after 15s
+  lastPowerupSpawn=Date.now()+15000;
   countedBossWaves=new Set();
   startTime=Date.now();totalPausedMs=0;recordBroken=false;
   lastBossScore=-1;bossWarningActive=false;pendingBossGaps=[];levelBeforeRun=getLevel();
@@ -695,7 +686,6 @@ function spawnEnemy(){
   const delay=Math.max(100,s.spawnRate-score*3.2);
   const spawnX=Math.random()*(canvas.width-50);
   const w=22+Math.random()*36;
-  // Danger indicator
   const indTTL=Math.min(delay-80,550);
   if(indTTL>100)dangerIndicators.push({x:spawnX+w/2,ttl:indTTL,maxTtl:indTTL,born:Date.now()});
   const shape=shapePool[Math.floor(Math.random()*shapePool.length)];
@@ -716,51 +706,39 @@ function update(){
   score=Math.floor(elapsed/1000);
   document.getElementById('score-display').textContent=score+'s';
 
-  // Achievements by score
   if(score>=30)triggerAchievement('survive_30');
   if(score>=60)triggerAchievement('survive_60');
   if(score>=120)triggerAchievement('survive_120');
   if(score>=30&&currentDifficulty==='extreme')triggerAchievement('extreme_30');
 
-  // Record check
   if(score>highscores[currentDifficulty]&&highscores[currentDifficulty]>0&&!recordBroken){recordBroken=true;document.getElementById('record-alert').style.display='block';playThemed('record');}
 
-  // Boss trigger
   if(score>=30&&score%30===0&&score!==lastBossScore&&!bossWarningActive){lastBossScore=score;triggerBossWarning();}
 
-  // Power-up spawn
   trySpawnPowerup();checkPowerupExpiry();updatePowerupDisplay();
 
-  // Combo decay
   const now=Date.now();
   if(combo>0&&now-lastDodgeTime>COMBO_TIMEOUT){combo=0;comboMult=1;document.getElementById('combo-display').style.display='none';}
 
-  // Shake decay
   if(shakeMag>0.3)shakeMag*=0.83;else shakeMag=0;
 
-  // Stars parallax
   starsNear.forEach(s=>{s.y+=s.speed*(slowActive?0.5:1);if(s.y>canvas.height){s.y=0;s.x=Math.random()*canvas.width;}});
   starsFar.forEach(s=>{s.y+=s.speed*(slowActive?0.5:1);if(s.y>canvas.height){s.y=0;s.x=Math.random()*canvas.width;}});
 
-  // Particles
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=0.975;p.vy*=0.975;p.life--;if(p.life<=0)particles.splice(i,1);}
 
-  // Danger indicators
   for(let i=dangerIndicators.length-1;i>=0;i--){dangerIndicators[i].ttl-=16;if(dangerIndicators[i].ttl<=0)dangerIndicators.splice(i,1);}
 
-  // Player trail
   playerTrail.unshift({x:player.x+player.w/2,y:player.y+player.h/2,age:0});
   if(playerTrail.length>14)playerTrail.pop();
   playerTrail.forEach(t=>t.age++);
 
-  // Power-up items
   for(let i=powerupItems.length-1;i>=0;i--){
     const pu=powerupItems[i];pu.y+=pu.speed;
     if(pu.y>canvas.height+40){powerupItems.splice(i,1);continue;}
     if(circleRectHit(pu.x,pu.y,pu.size,player.x,player.y,player.w,player.h)){collectPowerup(pu);powerupItems.splice(i,1);}
   }
 
-  // Enemies
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
     const spd=slowActive&&!e.isBoss?e.speed*0.35:e.speed;
@@ -792,7 +770,6 @@ function update(){
       const xpGain=e.isBoss?10:2;
       coinsThisRun+=earned;xpThisRun+=xpGain;
 
-      // Combo
       combo++;lastDodgeTime=now;
       if(combo>bestComboRun)bestComboRun=combo;
       comboMult=Math.min(1+Math.floor(combo/5)*0.5,4);
@@ -853,28 +830,22 @@ function draw(){
   const sy=shakeMag>0.3?(Math.random()-0.5)*shakeMag*0.5:0;
   ctx.translate(sx,sy);
 
-  // Far stars
   starsFar.forEach(s=>{ctx.globalAlpha=0.4;ctx.fillStyle=isRainbowBg?`hsl(${(rainbowStarHue+=0.1)%360},100%,65%)`:currentStarColor;ctx.fillRect(s.x,s.y,s.size*0.5,s.size*0.5);});
-  // Near stars
   starsNear.forEach(s=>{ctx.globalAlpha=0.75;ctx.fillStyle=isRainbowBg?`hsl(${(rainbowStarHue+=0.15)%360},100%,65%)`:currentStarColor;ctx.fillRect(s.x,s.y,s.size*0.65,s.size*0.65);});
   ctx.globalAlpha=1;
 
-  // Particles
   particles.forEach(p=>{ctx.globalAlpha=(p.life/p.maxLife)*0.9;ctx.shadowBlur=10;ctx.shadowColor=p.color;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);});
   ctx.globalAlpha=1;
 
-  // Danger indicators
   dangerIndicators.forEach(di=>{
     const alpha=(di.ttl/di.maxTtl)*0.85;
     ctx.globalAlpha=alpha;ctx.fillStyle='#ff2222';ctx.shadowBlur=8;ctx.shadowColor='#ff0000';
     const ax=di.x,ay=12,as=10;
     ctx.beginPath();ctx.moveTo(ax,ay+as);ctx.lineTo(ax-as,ay);ctx.lineTo(ax+as,ay);ctx.closePath();ctx.fill();
-    // Pulse line
     ctx.fillStyle='rgba(255,30,30,0.25)';ctx.fillRect(ax-2,0,4,ay);
   });
   ctx.globalAlpha=1;ctx.shadowBlur=0;
 
-  // Power-up items on field
   powerupItems.forEach(pu=>{
     const pulse=0.7+0.3*Math.sin(Date.now()/220);
     ctx.globalAlpha=pulse;ctx.shadowBlur=18;ctx.shadowColor=pu.type.color;
@@ -885,7 +856,6 @@ function draw(){
   });
   ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.textAlign='left';ctx.textBaseline='alphabetic';
 
-  // Player trail
   const pc=getPlayerColor();
   playerTrail.forEach(t=>{
     const a=(1-t.age/14)*0.55;
@@ -896,13 +866,11 @@ function draw(){
   });
   ctx.globalAlpha=1;
 
-  // Player
   ctx.shadowBlur=recordBroken?30:22;ctx.shadowColor=pc;ctx.fillStyle=pc;
   ctx.fillRect(player.x,player.y,player.w,player.h);
   ctx.shadowBlur=6;ctx.fillStyle='#fff';
   ctx.fillRect(player.x+7,player.y+4,player.w-14,player.h-8);
 
-  // Shield effect
   if(hasShield){
     ctx.globalAlpha=0.45+0.3*Math.sin(Date.now()/180);
     ctx.strokeStyle='#00aaff';ctx.shadowBlur=18;ctx.shadowColor='#00aaff';ctx.lineWidth=3;
@@ -910,20 +878,15 @@ function draw(){
     ctx.lineWidth=1;ctx.globalAlpha=1;
   }
 
-  // Slow effect overlay
   if(slowActive){ctx.globalAlpha=0.06;ctx.fillStyle='#ffff00';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.globalAlpha=1;}
-
-  // Magnet effect
   if(magnetActive){ctx.globalAlpha=0.07+0.05*Math.sin(Date.now()/120);ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.globalAlpha=1;}
 
-  // Enemies
   enemies.forEach(e=>{
     ctx.shadowBlur=e.isBoss?28:12;ctx.shadowColor=e.color;ctx.fillStyle=e.color;
     drawShape(e);
     if(!e.isBoss&&e.shape==='rect'){ctx.shadowBlur=4;ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillRect(e.x+4,e.y+4,e.w-8,4);}
   });
 
-  // Boss gap indicators during warning
   if(bossWarningActive&&pendingBossGaps.length>0){
     const pulse=0.3+0.22*Math.sin(Date.now()/110);
     pendingBossGaps.forEach(gap=>{
@@ -965,7 +928,6 @@ function gameOver(){
   const newLv=getLevel();
   saveGameData();
 
-  // Coin achievement
   if(totalCoins>=500)triggerAchievement('coins_500');
   if(newLv>=5)triggerAchievement('level_5');
 
@@ -987,7 +949,6 @@ function gameOver(){
 
   if(newLv>oldLv)playThemed('levelup');
 
-  // Hall of Fame - AUTOMATISCH MIT GLOBALEM NAMEN
   setTimeout(()=>{
     if(isDailyMode){
       localStorage.setItem('neonDailyDate',getDailyStr());
@@ -1041,9 +1002,12 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('resize',()=>{if(state==='PLAYING')initCanvas();});
 
 // ====== INIT ======
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d',{alpha:true});
+
 loadGameData();
 updateMenuScores();
-// Zeige Name-Screen falls noch keiner existiert, sonst Hauptmenü
+
 if(globalPlayerName === '') {
   document.getElementById('name-overlay').style.display = 'block';
 } else {
