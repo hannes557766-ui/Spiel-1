@@ -15,6 +15,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #fbfbfc; color: #111; font-family: 'Space Grotesk', system-ui, sans-serif; user-select: none; touch-action: none; }
   canvas { position: fixed; inset: 0; display: block; }
+  .playing-cursor { cursor: none; }
   .hud { position: fixed; inset: 0 0 auto 0; z-index: 20; pointer-events: none; padding: 24px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
   .label { color: #9a9aa3; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
   .score { font-family: 'JetBrains Mono', monospace; font-size: clamp(42px, 8vw, 78px); font-weight: 800; line-height: .86; letter-spacing: -3px; }
@@ -335,6 +336,7 @@ let blocks = [], particles = [], lanes = [], spawnT = 0, keys = {};
 let coinObjs = [], coinSpawnT = 0;
 const touch = { left: false, right: false };
 const mouse = { x: -1, active: false, isTouch: false };
+let lastInputMode = 'touch';
 let shieldLeft = 0;
 let slowTime = 0;
 let developerGodMode = false;
@@ -374,6 +376,7 @@ function reset() {
   G.shake = 0;
   G.flash = 0;
   runIsDeveloper = developerActive();
+  lastInputMode = (mouse.isTouch || touch.left || touch.right) ? 'touch' : 'mouse';
   G.startBest = G.bests[G.diff] || 0;
   G.best = G.startBest;
   blocks = [];
@@ -399,6 +402,7 @@ function reset() {
   document.getElementById('over').classList.remove('show');
   document.getElementById('shop').classList.remove('show');
   document.getElementById('hint').style.display = 'none';
+  document.body.classList.add('playing-cursor');
   updateHUD();
   audio();
   startMusicLoop();
@@ -425,14 +429,26 @@ function update(dt) {
     G.save();
   }
   let move = 0; if (keys.ArrowLeft || keys.KeyA) move -= 1; if (keys.ArrowRight || keys.KeyD) move += 1;
-  if ((mouse.isTouch || mouse.active) && !move) {
+  if (move !== 0) lastInputMode = 'key';
+  if (touch.left || touch.right) lastInputMode = 'touch';
+  if (lastInputMode === 'mouse' && move === 0 && !touch.left && !touch.right && (mouse.isTouch || mouse.active)) {
+    // Maus-Folge-Modus: Block verfolgt die Maus-Position sanft.
     const targetX = Math.max(18, Math.min(W - player.w - 18, mouse.x - player.w / 2));
     const dx = targetX - player.x;
     player.x += dx * Math.min(1, dt * 32);
     player.vx = dx * 12;
     player.targetSquash = Math.abs(dx) > 4 ? 0.88 : 1;
-  } else {
+  } else if (move !== 0) {
+    // Tastatur-Steuerung: Beschleunigung in Richtung der gedrückten Taste.
     player.vx += move * player.speed * dt * 9; player.vx *= move ? 0.84 : 0.72; player.vx = Math.max(-player.speed * 1.35, Math.min(player.speed * 1.35, player.vx)); player.x += player.vx * dt; player.x = Math.max(18, Math.min(W - player.w - 18, player.x)); player.targetSquash = move ? 0.88 : 1;
+  } else if (lastInputMode === 'key' && move === 0) {
+    // Keine Taste mehr gedrückt: Block bleibt stehen (keine zurück-Taste).
+    player.vx *= 0.72;
+    player.targetSquash = 1;
+  } else {
+    // Touch-Steuerung (Touch-Spuren während des Spiels).
+    player.vx *= 0.8;
+    player.targetSquash = 1;
   }
   player.squash += (player.targetSquash - player.squash) * Math.min(1, dt * 12);
   const A = mobileAssist();
@@ -467,6 +483,7 @@ function die() {
   play('die');
   stopMusicLoop();
   document.getElementById('hint').style.display = 'none';
+  document.body.classList.remove('playing-cursor');
   
   const savedBest = Math.max(G.bests[G.diff] || 0, G.startBest || 0);
   const personalBest = runIsDeveloper ? savedBest : Math.max(G.score, savedBest);
@@ -1130,7 +1147,7 @@ function start() { reset(); }
 function toggleSound() { G.sound = !G.sound; document.getElementById('soundBtn').textContent = G.sound ? 'ON' : 'OFF'; if (G.sound) { audio(); play('click'); startMusicLoop(); } else { stopMusicLoop(); } }
 document.getElementById('startBtn').addEventListener('click', start);
 document.getElementById('againBtn').addEventListener('click', start);
-document.getElementById('homeBtn').addEventListener('click', () => { G.state = STATE.MENU; document.getElementById('over').classList.remove('show'); document.getElementById('shop').classList.remove('show'); document.getElementById('menu').classList.add('show'); document.getElementById('hint').style.display = 'block'; play('click'); });
+document.getElementById('homeBtn').addEventListener('click', () => { G.state = STATE.MENU; document.getElementById('over').classList.remove('show'); document.getElementById('shop').classList.remove('show'); document.getElementById('menu').classList.add('show'); document.getElementById('hint').style.display = 'block'; document.body.classList.remove('playing-cursor'); play('click'); });
 document.getElementById('soundBtn').addEventListener('click', e => { e.stopPropagation(); toggleSound(); });
 function typingInField() { const el = document.activeElement; return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'); }
 addEventListener('keydown', e => {
@@ -1148,7 +1165,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('pointermove', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; e.preventDefault(); } });
 addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; audio(); e.preventDefault(); } });
-addEventListener('mousemove', e => { if (e.pointerType !== 'touch') { mouse.x = e.clientX; mouse.active = true; mouse.isTouch = false; } });
+addEventListener('mousemove', e => { if (e.pointerType !== 'touch') { const dx = Math.abs(e.clientX - mouse.x); mouse.x = e.clientX; if (dx > 2) { mouse.active = true; mouse.isTouch = false; lastInputMode = 'mouse'; } } });
 addEventListener('pointerup', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; } });
 addEventListener('pointercancel', () => { mouse.active = false; mouse.isTouch = false; });
 addEventListener('mouseleave', () => { mouse.active = false; mouse.isTouch = false; });
