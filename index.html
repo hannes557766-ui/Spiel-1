@@ -296,12 +296,12 @@ const G = { state: STATE.MENU, score: 0, best: 0, startBest: 0, bests: {}, coins
   owned: { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true }, music: { pulse: true } },
   skin: 'classic', blockSkin: 'charcoal', bgSkin: 'light', musicTheme: 'pulse', powers: {},
   pwLevel(id) { if (typeof id === 'object' && id) id = id.id; return this.powers[id] || 0; },
-  load() {
+  loadLocal() {
     try { this.bests = JSON.parse(localStorage.getItem('block_dodge_bests')) || {}; } catch (e) {}
     try {
       const old = JSON.parse(localStorage.getItem('bd_owned')) || null;
       this.owned = { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true }, music: { pulse: true } };
-      if (old && !old.player) { // altes Format (flache Player-Skins) migrieren
+      if (old && !old.player) {
         this.owned.player = Object.assign({ classic: true }, old);
       } else if (old && old.player) {
         this.owned.player = Object.assign({ classic: true }, old.player);
@@ -318,9 +318,10 @@ const G = { state: STATE.MENU, score: 0, best: 0, startBest: 0, bests: {}, coins
     try { this.coins = parseInt(localStorage.getItem('bd_coins')) || 0; } catch (e) { this.coins = 0; }
     this.best = this.bests[this.diff] || 0;
   },
-  save() { try { this.bests[this.diff] = this.best; localStorage.setItem('block_dodge_bests', JSON.stringify(this.bests)); } catch (e) {} },
-  saveShop() {
+  saveLocal() {
     try {
+      this.bests[this.diff] = this.best;
+      localStorage.setItem('block_dodge_bests', JSON.stringify(this.bests));
       localStorage.setItem('bd_owned', JSON.stringify(this.owned));
       localStorage.setItem('bd_powers_v2', JSON.stringify(this.powers));
       localStorage.setItem('bd_skin', this.skin);
@@ -329,7 +330,10 @@ const G = { state: STATE.MENU, score: 0, best: 0, startBest: 0, bests: {}, coins
       localStorage.setItem('bd_music', this.musicTheme);
       localStorage.setItem('bd_coins', this.coins);
     } catch (e) {}
-  }
+  },
+  load() { this.loadLocal(); },
+  save() { this.saveLocal(); },
+  saveShop() { this.saveLocal(); }
 };
 const player = { x: 0, y: 0, w: 42, h: 42, vx: 0, speed: 980, targetSquash: 1, squash: 1 };
 let blocks = [], particles = [], lanes = [], spawnT = 0, keys = {};
@@ -780,6 +784,41 @@ function kickPlayer(diff, key) {
     .catch(() => toast('Kick fehlgeschlagen'));
 }
 
+function loadUserDataFromFirebase() {
+  if (!db || !authUser) return Promise.resolve();
+  return db.ref('users/' + authUser.uid + '/data').once('value')
+    .then(snap => {
+      const data = snap.val();
+      if (!data) return;
+      if (data.coins !== undefined) G.coins = data.coins;
+      if (data.owned) G.owned = data.owned;
+      if (data.powers) G.powers = data.powers;
+      if (data.skin) G.skin = data.skin;
+      if (data.blockSkin) G.blockSkin = data.blockSkin;
+      if (data.bgSkin) G.bgSkin = data.bgSkin;
+      if (data.musicTheme) G.musicTheme = data.musicTheme;
+      updateHUD();
+      renderShop();
+    })
+    .catch(() => {});
+}
+
+function saveUserDataToFirebase() {
+  if (!db || !authUser) return Promise.resolve();
+  const userData = {
+    coins: G.coins,
+    owned: G.owned,
+    powers: G.powers,
+    skin: G.skin,
+    blockSkin: G.blockSkin,
+    bgSkin: G.bgSkin,
+    musicTheme: G.musicTheme,
+    updatedAt: Date.now()
+  };
+  return db.ref('users/' + authUser.uid + '/data').set(userData)
+    .catch(() => {});
+}
+
 function syncPlayerRecords() {
   if (!db) return;
   const key = currentPlayerKey();
@@ -984,13 +1023,14 @@ function doLogin() {
         setPlayerName(name);
         closeLoginModal();
         syncPlayerRecords();
+        saveUserDataToFirebase();
         toast('Willkommen, ' + name + '!');
         play('level');
       }))
       .catch(err => setLoginMsg(friendlyAuthError(err)));
   } else {
     auth.signInWithEmailAndPassword(email, pass)
-      .then(() => { closeLoginModal(); syncPlayerRecords(); toast('Eingeloggt!'); play('level'); })
+      .then(() => { closeLoginModal(); syncPlayerRecords(); saveUserDataToFirebase(); toast('Eingeloggt!'); play('level'); })
       .catch(err => setLoginMsg(friendlyAuthError(err)));
   }
 }
@@ -998,7 +1038,7 @@ function loginGoogle() {
   if (!auth) { setLoginMsg('Firebase Auth nicht verfügbar.'); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .then(() => { closeLoginModal(); syncPlayerRecords(); toast('Eingeloggt!'); play('level'); })
+    .then(() => { closeLoginModal(); syncPlayerRecords(); saveUserDataToFirebase(); toast('Eingeloggt!'); play('level'); })
     .catch(err => setLoginMsg(friendlyAuthError(err)));
 }
 function loginAnon() {
@@ -1058,6 +1098,7 @@ if (auth) {
       if (user.displayName) setPlayerName(user.displayName);
       syncPlayerRecords();
       applyDevMode();
+      loadUserDataFromFirebase();
     } else {
       applyDevMode();
     }
@@ -1075,6 +1116,13 @@ if (auth) {
   if (!getPlayerName()) showNameModal();
   else syncPlayerRecords();
 }
+
+// Auto-save shop data to Firebase on purchases
+const originalSaveShop = G.saveShop;
+G.saveShop = function() {
+  originalSaveShop();
+  saveUserDataToFirebase();
+};
 
 document.getElementById('accountBtn').addEventListener('click', () => {
   document.getElementById('menu').classList.remove('show');
