@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style>
@@ -81,12 +82,32 @@
   .lb-empty { padding: 16px; text-align: center; color: #9a9aa3; font-size: 12px; font-weight: 700; }
   .lb-rename { border: none; background: none; color: #9a9aa3; font: 700 11px 'Space Grotesk', sans-serif; cursor: pointer; text-decoration: underline; }
   .lb-rename:hover { color: #111; }
+  .lb-kick { border: none; background: #fde8e8; color: #dc2626; width: 26px; height: 26px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; flex-shrink: 0; transition: .15s ease; }
+  .lb-kick:hover { background: #dc2626; color: #fff; transform: scale(1.1); }
   .lvldots { display: flex; justify-content: center; gap: 4px; margin: 6px 0; }
   .lvldots .dot { width: 7px; height: 7px; border-radius: 50%; background: #dddde3; transition: .16s; }
   .lvldots .dot.on { background: #111; }
   .upgrade-cost { font-size: 10px; color: #888892; font-weight: 800; margin-top: 4px; display: inline-flex; align-items: center; gap: 3px; }
   .upgrade-cost .uc { width: 8px; height: 8px; border-radius: 50%; background: #ffcf33; }
   .shop-item .plabel { font-size: 10px; color: #23a45a; font-weight: 800; }
+  .btn-google { background: #fff; color: #111; border: 2px solid #e8e8ec; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-google:hover { background: #f5f5f5; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+  .g-logo { width: 18px; height: 18px; }
+  .avatar { width: 58px; height: 58px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; margin: 6px auto 10px; }
+  .login-info-name { font-size: 18px; font-weight: 800; }
+  .login-info-mail { font-size: 12px; color: #9a9aa3; font-weight: 700; margin-top: 2px; }
+  .or-div { display: flex; align-items: center; gap: 10px; margin: 14px 0 2px; }
+  .or-div .line { flex: 1; height: 1px; background: #eee; }
+  .or-div span { font-size: 11px; color: #9a9aa3; font-weight: 700; letter-spacing: 1px; }
+  .auth-msg { color: #ef4444; font-size: 12px; font-weight: 700; min-height: 16px; margin: 8px 0 4px; }
+  .dev-panel { position: fixed; left: 22px; bottom: 22px; z-index: 55; display: none; width: 210px; padding: 14px; border-radius: 16px; background: rgba(17,17,17,.94); color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.18); pointer-events: auto; }
+  .dev-title { color: #ffd94a; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin-bottom: 10px; }
+  .dev-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 800; }
+  .dev-row output { color: #ffd94a; font-family: 'JetBrains Mono', monospace; }
+  .dev-range { display: block; width: 100%; margin: 8px 0 12px; accent-color: #ffd94a; cursor: pointer; }
+  .dev-god { width: 100%; border: 1px solid #555; border-radius: 9px; padding: 8px; background: #252525; color: #fff; font: 800 11px 'Space Grotesk', sans-serif; cursor: pointer; }
+  .dev-god.on { background: #ffd94a; color: #111; border-color: #ffd94a; }
+  @media (max-width: 700px) { .dev-panel { left: 12px; bottom: 12px; width: 190px; } }
 </style>
 </head>
 <body>
@@ -96,8 +117,14 @@
   <div><div class="label">Score</div><div class="score" id="score">0</div></div>
   <div class="right"><div><div class="label">Coins</div><div class="value" id="coinsHud">∞</div></div><div><div class="label">Speed</div><div class="value" id="speed">1.0x</div></div><div><div class="label">Modus</div><div class="value" id="mode" style="font-size:14px;text-transform:uppercase;letter-spacing:1px;">Normal</div></div></div>
 </div>
-<div class="hint" id="hint">Maus bewegen zum Steuern · A / D · Pfeile · Handy: links/rechts halten</div>
+<div class="hint" id="hint">Maus oder Finger bewegen · A / D · Pfeile</div>
 <div class="toast" id="toast">FAST</div>
+<div id="devPanel" class="dev-panel">
+  <div class="dev-title">DEV TOOLS</div>
+  <div class="dev-row"><span>Speed</span><output id="devSpeedValue">1.0x</output></div>
+  <input id="devSpeed" class="dev-range" type="range" min="0.25" max="3" step="0.05" value="1" />
+  <button id="devGod" class="dev-god">GOD MODE: AUS</button>
+</div>
 <button class="sound" id="soundBtn">ON</button>
 <div id="menu" class="modal show">
   <div class="panel">
@@ -112,13 +139,42 @@
     <button class="btn btn-primary" id="startBtn">START</button>
     <button class="btn btn-shop" id="shopBtn">SHOP</button>
     <button class="btn btn-ghost" id="lbBtn">RANGLISTE</button>
+    <button class="btn btn-ghost" id="accountBtn">ANMELDEN</button>
+  </div>
+</div>
+<div id="loginModal" class="modal">
+  <div class="panel" style="width:min(400px,100%);text-align:center;">
+    <h2 id="loginTitle">ANMELDEN</h2>
+    <div class="nm-sub" id="loginSub"></div>
+    <div id="loginForm">
+      <input id="loginEmail" class="name-input" type="email" placeholder="E-Mail" autocomplete="email" />
+      <input id="loginPass" class="name-input" type="password" placeholder="Passwort (min. 6 Zeichen)" autocomplete="current-password" />
+      <input id="loginName" class="name-input" type="text" maxlength="14" placeholder="Spielername" autocomplete="nickname" style="display:none;" />
+      <div class="auth-msg" id="loginMsg"></div>
+      <button class="btn btn-primary" id="loginSubmit">ANMELDEN</button>
+      <button class="btn btn-ghost" id="loginToggle">Konto erstellen</button>
+      <div class="or-div"><div class="line"></div><span>ODER</span><div class="line"></div></div>
+      <button class="btn btn-google" id="googleBtn">
+        <svg class="g-logo" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Mit Google anmelden
+      </button>
+      <button class="btn btn-ghost" id="anonBtn" style="margin-top:10px;">Als Gast spielen</button>
+    </div>
+    <div id="loginInfo" style="display:none;">
+      <div class="avatar" id="loginAvatar">?</div>
+      <div class="login-info-name" id="loginDisplayName">—</div>
+      <div class="login-info-mail" id="loginEmail2">—</div>
+      <button class="btn btn-primary" id="logoutBtn" style="margin-top:18px;">ABMELDEN</button>
+      <button class="btn btn-ghost" id="renameBtn">Name ändern</button>
+      <button class="btn btn-ghost" id="devBtn" style="display:none;margin-top:10px;border-color:#111;background:#111;color:#ffd94a;">⚡ DEVELOPER MODE: AUS</button>
+    </div>
+    <button class="btn btn-ghost" id="loginBack">ZURÜCK</button>
   </div>
 </div>
 <div id="nameModal" class="modal">
   <div class="panel">
     <h2>DEIN NAME</h2>
-    <div class="nm-sub">Für die Rangliste</div>
-    <input id="nameInput" class="name-input" maxlength="14" placeholder="Name…" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+    <input id="nameInput" class="name-input" maxlength="14" placeholder="Name…" autocomplete="off" style="margin-top:16px;" />
     <button class="btn btn-primary" id="nameSave">SPEICHERN</button>
   </div>
 </div>
@@ -146,6 +202,7 @@
       <button class="shop-tab active" data-tab="player">Spieler</button>
       <button class="shop-tab" data-tab="blocks">Blöcke</button>
       <button class="shop-tab" data-tab="bg">Hinter</button>
+      <button class="shop-tab" data-tab="music">Musik</button>
       <button class="shop-tab" data-tab="powers">Skills</button>
     </div>
     <div class="shop-list" id="shopList"></div>
@@ -155,7 +212,8 @@
 <div id="over" class="modal">
   <div class="panel">
     <h2>GAME OVER</h2>
-    <div class="stats" style="grid-template-columns:1fr 1fr 1fr;"><div class="stat"><strong id="finalScore">0</strong><span>Score</span></div><div class="stat"><strong id="finalBest">0</strong><span>Best</span></div><div class="stat"><strong id="finalCoins">+0</strong><span>Coins</span></div></div>
+    <div id="newRecordBadge" style="display:none;margin:8px auto 0;background:#111;color:#fff;border-radius:999px;padding:4px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;width:fit-content;">★ NEUER REKORD ★</div>
+    <div class="stats" style="grid-template-columns:1fr 1fr 1fr;margin-top:18px;"><div class="stat"><strong id="finalScore">0</strong><span>Score</span></div><div class="stat"><strong id="finalBest">0</strong><span>Rekord</span></div><div class="stat"><strong id="finalCoins">+0</strong><span>Coins</span></div></div>
     <button class="btn btn-primary" id="againBtn">NOCHMAL</button><button class="btn btn-shop" id="overShopBtn">SHOP</button><button class="btn btn-ghost" id="overLbBtn">RANGLISTE</button><button class="btn btn-ghost" id="homeBtn">MENÜ</button>
   </div>
 </div>
@@ -214,6 +272,15 @@ const BG_SKINS = [
   { id: 'matrix', name: 'Matrix',    cost: 1500, top: '#052e16', bottom: '#14532d', grid: 'rgba(74,222,128,.09)', lane: 'rgba(74,222,128,.1)', dark: true },
   { id: 'vapor',  name: 'Vaporwave', cost: 2000, top: '#fdf4ff', bottom: '#ede9fe', grid: 'rgba(147,51,234,.1)', lane: 'rgba(217,70,239,.12)' }
 ];
+const MUSIC_THEMES = [
+  { id: 'pulse', name: 'Pulse', cost: 0, color: '#111111', wave: 'square', tempo: 150, notes: [220, 277, 330, 277, 220, 185, 196, 220] },
+  { id: 'chill', name: 'Chill', cost: 350, color: '#2b8fff', wave: 'sine', tempo: 112, notes: [196, 247, 294, 247, 220, 196, 165, 196] },
+  { id: 'arcade', name: 'Arcade', cost: 500, color: '#ff7a3d', wave: 'square', tempo: 168, notes: [330, 392, 494, 392, 330, 262, 294, 330] },
+  { id: 'nightdrive', name: 'Night', cost: 700, color: '#8b5cf6', wave: 'triangle', tempo: 128, notes: [110, 147, 165, 196, 165, 147, 123, 147] },
+  { id: 'matrixbeat', name: 'Matrix', cost: 900, color: '#22c55e', wave: 'sawtooth', tempo: 140, notes: [98, 147, 196, 147, 98, 123, 147, 165] },
+  { id: 'hyper', name: 'Hyper', cost: 1300, color: '#ec4899', wave: 'square', tempo: 190, notes: [440, 554, 659, 554, 494, 392, 330, 392] },
+  { id: 'silent', name: 'Silent', cost: 150, color: '#9a9aa3', wave: 'sine', tempo: 120, notes: [] }
+];
 const POWERS = [
   { id:'magnet',   icon:'🧲', name:'Coin-Magnet',   baseCost:600,  costLvl:[0,800,1200,1800,2600], desc:'Zieht Coins an'},
   { id:'small',    icon:'🔹', name:'Mini-Block',    baseCost:800,  costLvl:[0,1100,1600,2400,3600], desc:'Kleiner = schwerer zu treffen'},
@@ -224,27 +291,30 @@ const POWERS = [
   { id:'luckycoin',icon:'🍀', name:'Lucky-Coins',   baseCost:900,  costLvl:[0,1300,2000,3000,4500], desc:'Extra Coins beim Start'},
 ];
 
-const G = { state: STATE.MENU, score: 0, best: 0, bests: {}, coins: 0, runCoins: 0, time: 0, speedMult: 1, shake: 0, flash: 0, sound: true, diff: 'normal',
-  owned: { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true } },
-  skin: 'classic', blockSkin: 'charcoal', bgSkin: 'light', powers: {},
+const G = { state: STATE.MENU, score: 0, best: 0, startBest: 0, bests: {}, coins: 0, runCoins: 0, time: 0, speedMult: 1, shake: 0, flash: 0, sound: true, diff: 'normal', infinite: false,
+  owned: { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true }, music: { pulse: true } },
+  skin: 'classic', blockSkin: 'charcoal', bgSkin: 'light', musicTheme: 'pulse', powers: {},
   pwLevel(id) { if (typeof id === 'object' && id) id = id.id; return this.powers[id] || 0; },
   load() {
     try { this.bests = JSON.parse(localStorage.getItem('block_dodge_bests')) || {}; } catch (e) {}
     try {
       const old = JSON.parse(localStorage.getItem('bd_owned')) || null;
-      this.owned = { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true } };
+      this.owned = { player: { classic: true }, blocks: { charcoal: true }, bg: { light: true }, music: { pulse: true } };
       if (old && !old.player) { // altes Format (flache Player-Skins) migrieren
         this.owned.player = Object.assign({ classic: true }, old);
       } else if (old && old.player) {
         this.owned.player = Object.assign({ classic: true }, old.player);
         this.owned.blocks = Object.assign({ charcoal: true }, old.blocks);
         this.owned.bg = Object.assign({ light: true }, old.bg);
+        this.owned.music = Object.assign({ pulse: true }, old.music);
       }
     } catch (e) {}
     try { this.powers = JSON.parse(localStorage.getItem('bd_powers_v2')) || {}; } catch (e) { this.powers = {}; }
     try { this.skin = localStorage.getItem('bd_skin') || 'classic'; } catch (e) {}
     try { this.blockSkin = localStorage.getItem('bd_blockskin') || 'charcoal'; } catch (e) {}
     try { this.bgSkin = localStorage.getItem('bd_bgskin') || 'light'; } catch (e) {}
+    try { this.musicTheme = localStorage.getItem('bd_music') || 'pulse'; } catch (e) {}
+    try { this.coins = parseInt(localStorage.getItem('bd_coins')) || 0; } catch (e) { this.coins = 0; }
     this.best = this.bests[this.diff] || 0;
   },
   save() { try { this.bests[this.diff] = this.best; localStorage.setItem('block_dodge_bests', JSON.stringify(this.bests)); } catch (e) {} },
@@ -255,16 +325,21 @@ const G = { state: STATE.MENU, score: 0, best: 0, bests: {}, coins: 0, runCoins:
       localStorage.setItem('bd_skin', this.skin);
       localStorage.setItem('bd_blockskin', this.blockSkin);
       localStorage.setItem('bd_bgskin', this.bgSkin);
+      localStorage.setItem('bd_music', this.musicTheme);
+      localStorage.setItem('bd_coins', this.coins);
     } catch (e) {}
   }
 };
-const player = { x: 0, y: 0, w: 42, h: 42, vx: 0, speed: 720, targetSquash: 1, squash: 1 };
+const player = { x: 0, y: 0, w: 42, h: 42, vx: 0, speed: 980, targetSquash: 1, squash: 1 };
 let blocks = [], particles = [], lanes = [], spawnT = 0, keys = {};
 let coinObjs = [], coinSpawnT = 0;
 const touch = { left: false, right: false };
 const mouse = { x: -1, active: false, isTouch: false };
 let shieldLeft = 0;
 let slowTime = 0;
+let developerGodMode = false;
+let developerSpeed = 1;
+let runIsDeveloper = false;
 function buildLanes() { const margin = Math.max(28, W * 0.06); const count = Math.max(5, Math.min(9, Math.floor(W / 110))); const gap = (W - margin * 2) / count; lanes = []; for (let i = 0; i < count; i++) lanes.push(margin + gap * i + gap / 2); }
 function pwL(id) {
   if (typeof id === 'object' && id) id = id.id;
@@ -283,6 +358,12 @@ function pwL(id) {
   if (!arr) return 0;
   return arr[Math.min(lvl - 1, arr.length - 1)] || 0;
 }
+function mobileAssist() {
+  const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  return (coarse || W < 760)
+    ? { speed: 0.78, size: -12, spawn: 0.26, vx: 0.55, minSpawn: 0.2, extraA: 0.38, extraB: 0.11 }
+    : { speed: 1, size: 0, spawn: 0, vx: 1, minSpawn: 0.12, extraA: 0.6, extraB: 0.22 };
+}
 function reset() {
   buildLanes();
   G.state = STATE.PLAY;
@@ -292,13 +373,16 @@ function reset() {
   G.speedMult = 1;
   G.shake = 0;
   G.flash = 0;
+  runIsDeveloper = developerActive();
+  G.startBest = G.bests[G.diff] || 0;
+  G.best = G.startBest;
   blocks = [];
   particles = [];
   coinObjs = [];
   coinSpawnT = 1;
   shieldLeft = pwL('shield');
   slowTime = pwL('slow');
-  player.w = Math.max(22, 42 - pwL('small'));
+  player.w = Math.max(20, (42 - pwL('small')) * (mobileAssist().speed < 1 ? 0.88 : 1));
   player.h = player.w;
   player.x = W / 2 - player.w / 2;
   player.y = H - 92;
@@ -309,7 +393,7 @@ function reset() {
   const lc = pwL('luckycoin');
   if (lc > 0) {
     G.runCoins += lc;
-    G.coins += lc;
+    if (!G.infinite) G.coins += lc;
   }
   document.getElementById('menu').classList.remove('show');
   document.getElementById('over').classList.remove('show');
@@ -317,63 +401,101 @@ function reset() {
   document.getElementById('hint').style.display = 'none';
   updateHUD();
   audio();
+  startMusicLoop();
   play('start');
 }
 function spawnCoin() { const lane = lanes[Math.floor(Math.random() * lanes.length)]; coinObjs.push({ x: lane + (Math.random() - 0.5) * 30, y: -20, r: 11, vy: 210 + Math.random() * 60, pulse: Math.random() * 6, got: false }); }
-function spawnBlock() { const lane = lanes[Math.floor(Math.random() * lanes.length)]; const D = DIFFS[G.diff]; const difficulty = Math.min(1, G.time / 40); const size = Math.max(24, 38 + Math.random() * (34 + difficulty * 22) + D.size); const fast = Math.random() < 0.16 + difficulty * 0.18; const wide = Math.random() < 0.1 + difficulty * 0.16; const w = wide ? size * (1.8 + Math.random() * 1.4) : size; const h = fast ? size * 0.72 : size; blocks.push({ x: lane - w / 2 + (Math.random() - 0.5) * 18, y: -h - 20, w, h, vy: (260 + Math.random() * 140 + G.time * 7) * (fast ? 1.45 : 1) * D.speed, vx: (Math.random() < 0.22 + difficulty * 0.18) ? (Math.random() - 0.5) * (80 + G.time * 2) * D.vx : 0, rot: 0, vr: (Math.random() - 0.5) * 0.03, passed: false, type: fast ? 'fast' : wide ? 'wide' : 'normal' }); }
+function spawnBlock() { const lane = lanes[Math.floor(Math.random() * lanes.length)]; const D = DIFFS[G.diff]; const A = mobileAssist(); const difficulty = Math.min(1, G.time / 40); const size = Math.max(22, 38 + Math.random() * (34 + difficulty * 22) + D.size + A.size); const fast = Math.random() < 0.16 + difficulty * 0.18; const wide = Math.random() < (0.1 + difficulty * 0.16) * (A.speed < 1 ? 0.65 : 1); const w = wide ? size * (1.8 + Math.random() * 1.4) : size; const h = fast ? size * 0.72 : size; blocks.push({ x: lane - w / 2 + (Math.random() - 0.5) * (A.speed < 1 ? 10 : 18), y: -h - 20, w, h, vy: (260 + Math.random() * 140 + G.time * 7) * (fast ? 1.45 : 1) * D.speed * A.speed, vx: (Math.random() < 0.22 + difficulty * 0.18) ? (Math.random() - 0.5) * (80 + G.time * 2) * D.vx * A.vx : 0, rot: 0, vr: (Math.random() - 0.5) * 0.03, passed: false, type: fast ? 'fast' : wide ? 'wide' : 'normal' }); }
 function hit(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 function update(dt) {
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 46); if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 3.8);
+  updateDevPanel();
   for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 900 * dt; p.life -= dt; p.vx *= 0.985; } particles = particles.filter(p => p.life > 0);
   if (G.state !== STATE.PLAY) return;
   G.time += dt;
   const slowFactor = slowTime > 0 ? 0.65 : 1;
   if (slowTime > 0) { slowTime -= dt; if (slowTime <= 0) slowTime = 0; }
-  G.speedMult = (1 + G.time * 0.035) * slowFactor;
+  const devSpeedFactor = developerActive() ? developerSpeed : 1;
+  G.speedMult = (1 + G.time * 0.035) * slowFactor * devSpeedFactor;
   const D = DIFFS[G.diff];
   G.score = Math.floor((G.time * 10 + (pwL('headstart') || 0)) * D.score);
-  if (G.score > G.best) { G.best = G.score; G.save(); }
+  if (!runIsDeveloper && G.score > G.best) {
+    G.best = G.score;
+    G.bests[G.diff] = G.score;
+    G.save();
+  }
   let move = 0; if (keys.ArrowLeft || keys.KeyA) move -= 1; if (keys.ArrowRight || keys.KeyD) move += 1;
   if ((mouse.isTouch || mouse.active) && !move) {
     const targetX = Math.max(18, Math.min(W - player.w - 18, mouse.x - player.w / 2));
     const dx = targetX - player.x;
-    player.x += dx * Math.min(1, dt * 22);
+    player.x += dx * Math.min(1, dt * 32);
     player.vx = dx * 12;
     player.targetSquash = Math.abs(dx) > 4 ? 0.88 : 1;
   } else {
-    player.vx += move * player.speed * dt * 5; player.vx *= move ? 0.86 : 0.78; player.vx = Math.max(-player.speed, Math.min(player.speed, player.vx)); player.x += player.vx * dt; player.x = Math.max(18, Math.min(W - player.w - 18, player.x)); player.targetSquash = move ? 0.88 : 1;
+    player.vx += move * player.speed * dt * 9; player.vx *= move ? 0.84 : 0.72; player.vx = Math.max(-player.speed * 1.35, Math.min(player.speed * 1.35, player.vx)); player.x += player.vx * dt; player.x = Math.max(18, Math.min(W - player.w - 18, player.x)); player.targetSquash = move ? 0.88 : 1;
   }
   player.squash += (player.targetSquash - player.squash) * Math.min(1, dt * 12);
-  spawnT -= dt; if (spawnT <= 0) { spawnBlock(); if (G.time > 7 && Math.random() < Math.min(0.6, G.time / 55)) spawnBlock(); if (G.time > 24 && Math.random() < 0.22) spawnBlock(); spawnT = Math.max(0.12, 0.72 - G.time * 0.012 + Math.random() * 0.18 + D.spawn); }
-  coinSpawnT -= dt; if (coinSpawnT <= 0) { spawnCoin(); coinSpawnT = 0.9 + Math.random() * 1.1; }
+  const A = mobileAssist();
+  spawnT -= dt * devSpeedFactor; if (spawnT <= 0) { spawnBlock(); if (G.time > 7 && Math.random() < Math.min(A.extraA, G.time / (A.speed < 1 ? 75 : 55))) spawnBlock(); if (G.time > 24 && Math.random() < A.extraB) spawnBlock(); spawnT = Math.max(A.minSpawn, 0.72 - G.time * 0.012 + Math.random() * 0.18 + D.spawn + A.spawn); }
+  coinSpawnT -= dt * devSpeedFactor; if (coinSpawnT <= 0) { spawnCoin(); coinSpawnT = 0.9 + Math.random() * 1.1; }
   const pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
   const magRange = pwL('magnet');
   const coinMul = Math.max(1, pwL('coinmult') || 1);
   for (const c of coinObjs) {
-    c.y += c.vy * slowFactor * dt; c.pulse += dt * 6;
+    c.y += c.vy * slowFactor * devSpeedFactor * dt; c.pulse += dt * 6;
     if (magRange > 0) { const d = Math.hypot(c.x - pcx, c.y - pcy); if (d < magRange) { const f = Math.min(1, dt * 7); c.x += (pcx - c.x) * f; c.y += (pcy - c.y) * f; } }
     if (!c.got && Math.hypot(c.x - pcx, c.y - pcy) < c.r + player.w / 2) {
       c.got = true;
       G.runCoins += coinMul;
-      G.coins += coinMul;
+      if (!G.infinite) G.coins += coinMul;
       burst(c.x, c.y, '#ffcf33', 8);
       play('coin');
     }
   }
   coinObjs = coinObjs.filter(c => !c.got && c.y < H + 40);
   const pBox = { x: player.x + 4, y: player.y + 4, w: player.w - 8, h: player.h - 8 };
-  for (const b of blocks) { b.y += b.vy * G.speedMult * dt; b.x += b.vx * dt; b.rot += b.vr * G.speedMult; if ((b.x < 8 && b.vx < 0) || (b.x + b.w > W - 8 && b.vx > 0)) b.vx *= -1; if (!b.passed && b.y > player.y + player.h) { b.passed = true; G.score += Math.round(15 * D.score); if (Math.random() < 0.25) play('pass'); } if (hit(pBox, b)) { if (shieldLeft > 0) { shieldLeft--; b.passed = true; b.y = H + 200; G.shake = 14; G.flash = 0.25; burst(pcx, pcy, '#2b8fff', 26); play('level'); toast(shieldLeft > 0 ? 'SCHILD! (' + shieldLeft + ')' : 'SCHILD WEG!'); } else { die(); return; } } }
+  for (const b of blocks) { b.y += b.vy * G.speedMult * dt; b.x += b.vx * dt; b.rot += b.vr * G.speedMult; if ((b.x < 8 && b.vx < 0) || (b.x + b.w > W - 8 && b.vx > 0)) b.vx *= -1; if (!b.passed && b.y > player.y + player.h) { b.passed = true; G.score += Math.round(15 * D.score); if (Math.random() < 0.25) play('pass'); } if (hit(pBox, b)) { if (developerActive() && developerGodMode) { b.passed = true; b.y = H + 200; burst(pcx, pcy, '#ffd94a', 12); } else if (shieldLeft > 0) { shieldLeft--; b.passed = true; b.y = H + 200; G.shake = 14; G.flash = 0.25; burst(pcx, pcy, '#2b8fff', 26); play('level'); toast(shieldLeft > 0 ? 'SCHILD! (' + shieldLeft + ')' : 'SCHILD WEG!'); } else { die(); return; } } }
   blocks = blocks.filter(b => b.y < H + 140);
   if (Math.floor(G.time) > 0 && Math.floor(G.time) % 10 === 0 && Math.abs(G.time - Math.floor(G.time)) < dt) { toast(Math.floor(G.time) + 's'); G.flash = 0.18; play('level'); }
   updateHUD();
 }
-function die() { G.state = STATE.OVER; G.shake = 22; G.flash = 0.35; burst(player.x + player.w / 2, player.y + player.h / 2, '#111', 42); play('die'); document.getElementById('hint').style.display = 'none'; document.getElementById('finalScore').textContent = G.score; document.getElementById('finalBest').textContent = G.best; document.getElementById('finalCoins').textContent = '+' + G.runCoins; submitScore(); setTimeout(() => document.getElementById('over').classList.add('show'), 500); }
-function coinText() { return G.coins.toLocaleString('de-DE'); }
+function die() {
+  G.state = STATE.OVER;
+  G.shake = 22;
+  G.flash = 0.35;
+  burst(player.x + player.w / 2, player.y + player.h / 2, '#111', 42);
+  play('die');
+  stopMusicLoop();
+  document.getElementById('hint').style.display = 'none';
+  
+  const savedBest = Math.max(G.bests[G.diff] || 0, G.startBest || 0);
+  const personalBest = runIsDeveloper ? savedBest : Math.max(G.score, savedBest);
+  if (!runIsDeveloper) {
+    G.bests[G.diff] = personalBest;
+    G.best = personalBest;
+    G.save();
+  }
+  G.saveShop(); // Sichert die gesammelten Coins
+  
+  const isNewRecord = !runIsDeveloper && G.score > (G.startBest || 0) && G.score > 0;
+  const badge = document.getElementById('newRecordBadge');
+  if (badge) badge.style.display = isNewRecord ? 'block' : 'none';
+  if (isNewRecord) {
+    play('level');
+    toast('NEUER REKORD!');
+  }
+  
+  document.getElementById('finalScore').textContent = Math.floor(G.score).toLocaleString('de-DE');
+  document.getElementById('finalBest').textContent = Math.floor(personalBest).toLocaleString('de-DE');
+  document.getElementById('finalCoins').textContent = '+' + G.runCoins;
+  
+  submitScore();
+  setTimeout(() => { if (G.state === STATE.OVER) document.getElementById('over').classList.add('show'); }, 500);
+}
+function coinText() { return G.infinite ? '∞' : G.coins.toLocaleString('de-DE'); }
 function currentBG() { return BG_SKINS.find(s => s.id === G.bgSkin) || BG_SKINS[0]; }
 function currentBlocks() { return BLOCK_SKINS.find(s => s.id === G.blockSkin) || BLOCK_SKINS[0]; }
-function draw() {
-  if (G.state === STATE.PLAY) { document.body.style.cursor = 'none'; } else { document.body.style.cursor = 'default'; }
-  ctx.clearRect(0, 0, W, H); const bgs = currentBG(); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, bgs.top); bg.addColorStop(1, bgs.bottom); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); drawGrid(bgs); ctx.save(); if (G.shake > 0) ctx.translate((Math.random() - .5) * G.shake, (Math.random() - .5) * G.shake); drawBlocks(); drawCoins(); drawPlayer(); drawParticles(); ctx.restore(); if (G.flash > 0) { ctx.fillStyle = `rgba(0,0,0,${G.flash * .3})`; ctx.fillRect(0, 0, W, H); } }
+function draw() { ctx.clearRect(0, 0, W, H); const bgs = currentBG(); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, bgs.top); bg.addColorStop(1, bgs.bottom); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); drawGrid(bgs); ctx.save(); if (G.shake > 0) ctx.translate((Math.random() - .5) * G.shake, (Math.random() - .5) * G.shake); drawBlocks(); drawCoins(); drawPlayer(); drawParticles(); ctx.restore(); if (G.flash > 0) { ctx.fillStyle = `rgba(0,0,0,${G.flash * .3})`; ctx.fillRect(0, 0, W, H); } }
 function drawGrid(bgs) { ctx.save(); ctx.strokeStyle = bgs.grid; ctx.lineWidth = 1; const s = 52; const off = (G.time * 90 * G.speedMult) % s; for (let y = -off; y < H; y += s) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); } for (const x of lanes) { ctx.strokeStyle = bgs.lane; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); } ctx.restore(); }
 function drawBlocks() { const bs = currentBlocks(); for (const b of blocks) { ctx.save(); ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.rotate(b.rot); const col = b.type === 'fast' ? bs.colors[2] : b.type === 'wide' ? bs.colors[1] : bs.colors[0]; ctx.fillStyle = col; roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 7); ctx.fill(); ctx.strokeStyle = bs.edge; ctx.lineWidth = 1.5; roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 7); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.14)'; roundRect(-b.w / 2 + 4, -b.h / 2 + 4, b.w - 8, Math.max(4, b.h * .24), 4); ctx.fill(); ctx.restore(); } }
 function drawCoins() { for (const c of coinObjs) { const r = c.r + Math.sin(c.pulse) * 1.2; ctx.save(); ctx.translate(c.x, c.y); ctx.fillStyle = '#ffcf33'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r - 3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); } }
@@ -389,6 +511,17 @@ function drawPlayer() {
     ctx.beginPath();
     ctx.arc(pcx, pcy, player.w * 0.85 + Math.sin(G.time * 6) * 2, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+  if (developerActive() && developerGodMode) {
+    ctx.save();
+    ctx.strokeStyle = '#ffd94a';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(pcx, pcy, player.w * 1.08 + Math.sin(G.time * 8) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.restore();
   }
   ctx.save();
@@ -422,6 +555,7 @@ function updateHUD() { document.getElementById('score').textContent = G.score; d
 function selectDiff(d) {
   G.diff = d;
   G.load();
+  syncPlayerRecords();
   document.querySelectorAll('.diff-pill').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
   updateHUD();
   play('click');
@@ -433,9 +567,10 @@ let shopTab = 'player';
 function openShop() { renderShop(); document.getElementById('menu').classList.remove('show'); document.getElementById('over').classList.remove('show'); document.getElementById('shop').classList.add('show'); updateHUD(); play('click'); }
 function closeShop() { document.getElementById('shop').classList.remove('show'); document.getElementById('menu').classList.add('show'); play('click'); }
 function skinPreviewCSS(sk) { if (sk.color === 'rainbow') return 'background:linear-gradient(135deg,#ff5aa5,#ffcf33,#37d67a,#2b8fff);'; return 'background:' + sk.color + ';' + (sk.outline ? 'box-shadow:inset 0 0 0 2px #111;' : ''); }
-function canAfford(cost) { return G.coins >= cost; }
+function canAfford(cost) { return G.infinite || G.coins >= cost; }
 function blockPreviewCSS(bs) { return 'background:linear-gradient(135deg,' + bs.colors[0] + ',' + bs.colors[1] + ');box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);'; }
 function bgPreviewCSS(bgs) { return 'background:linear-gradient(180deg,' + bgs.top + ',' + bgs.bottom + ');box-shadow:inset 0 0 0 2px rgba(0,0,0,.08);'; }
+function musicPreviewCSS(m) { return 'background:' + m.color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;'; }
 function renderShop() {
   const list = document.getElementById('shopList'); list.innerHTML = '';
   if (shopTab === 'player') {
@@ -468,6 +603,17 @@ function renderShop() {
                : '<div class="cost"><span class="c"></span>' + bgs.cost + '</div>');
       div.onclick = () => buySkin('bg', bgs); list.appendChild(div);
     }
+  } else if (shopTab === 'music') {
+    for (const m of MUSIC_THEMES) {
+      const owned = !!G.owned.music[m.id], eq = G.musicTheme === m.id;
+      const div = document.createElement('div');
+      div.className = 'shop-item' + (eq ? ' equipped' : '');
+      div.innerHTML = '<div class="preview" style="' + musicPreviewCSS(m) + '">♪</div><div class="name">' + m.name + '</div>' +
+        '<div style="font-size:10px;color:#9a9aa3;font-weight:700;margin-top:3px;">' + (m.notes.length ? m.tempo + ' BPM' : 'Keine Musik') + '</div>' +
+        (owned ? '<div class="status ' + (eq ? 'eq' : 'owned') + '">' + (eq ? 'Aktiv' : 'Besitzt') + '</div>'
+               : '<div class="cost"><span class="c"></span>' + m.cost + '</div>');
+      div.onclick = () => buySkin('music', m); list.appendChild(div);
+    }
   } else {
     for (const pw of POWERS) {
       const lvl = G.pwLevel(pw.id), max = 5;
@@ -488,9 +634,9 @@ function renderShop() {
 }
 function buySkin(cat, item) {
   const owns = G.owned[cat];
-  const cur = cat === 'player' ? 'skin' : cat === 'blocks' ? 'blockSkin' : 'bgSkin';
-  if (owns[item.id]) { G[cur] = item.id; G.saveShop(); play('coin'); }
-  else if (canAfford(item.cost)) { G.coins -= item.cost; owns[item.id] = true; G[cur] = item.id; G.saveShop(); play('level'); toast(item.name + '!'); }
+  const cur = cat === 'player' ? 'skin' : cat === 'blocks' ? 'blockSkin' : cat === 'music' ? 'musicTheme' : 'bgSkin';
+  if (owns[item.id]) { G[cur] = item.id; G.saveShop(); play('coin'); if (cat === 'music') restartMusicLoop(); }
+  else if (canAfford(item.cost)) { if (!G.infinite) G.coins -= item.cost; owns[item.id] = true; G[cur] = item.id; G.saveShop(); play('level'); if (cat === 'music') restartMusicLoop(); toast(item.name + '!'); }
   else { play('die'); toast('Zu wenig Coins'); }
   renderShop(); updateHUD();
 }
@@ -499,7 +645,7 @@ function upgradePower(pw) {
   if (lvl >= 5) { play('click'); return; }
   const cost = lvl === 0 ? pw.baseCost : pw.costLvl[lvl];
   if (canAfford(cost)) {
-    G.coins -= cost; G.powers[pw.id] = (lvl || 0) + 1; G.saveShop();
+    if (!G.infinite) G.coins -= cost; G.powers[pw.id] = (lvl || 0) + 1; G.saveShop();
     play('level'); toast(pw.name + ' Lv.' + G.pwLevel(pw.id) + '!');
   } else { play('die'); toast('Zu wenig Coins'); }
   renderShop(); updateHUD();
@@ -521,10 +667,13 @@ const FIREBASE_CONFIG = {
   measurementId: "G-LLX83BLWRJ"
 };
 let db = null;
+let auth = null;
+let authUser = null;
 try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
+    auth = firebase.auth();
   }
 } catch (e) { console.warn('Firebase init failed', e); }
 
@@ -532,14 +681,116 @@ function getPlayerName() { try { return (localStorage.getItem('bd_player_name') 
 function setPlayerName(n) { try { localStorage.setItem('bd_player_name', n); } catch (e) {} }
 function sanitizeKey(s) { return s.replace(/[.#$\/\[\]]/g, '_'); }
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function currentPlayerName() {
+  if (authUser) {
+    if (authUser.isAnonymous) {
+      return (getPlayerName() || 'Gast_' + authUser.uid.slice(0, 4)).slice(0, 14);
+    }
+    return (authUser.displayName || getPlayerName() || (authUser.email ? authUser.email.split('@')[0] : '') || 'Spieler').slice(0, 14);
+  }
+  return (getPlayerName() || '').slice(0, 14);
+}
+function currentPlayerKey() {
+  if (authUser) return authUser.uid;
+  const n = getPlayerName();
+  return n ? ('guest_' + sanitizeKey(n)) : '';
+}
+
+// ---- DEVELOPER MODE ----
+const DEV_EMAIL = 'hannes557766@gmail.com';
+function isDevUser() {
+  if (!authUser) return false;
+  const em = (authUser.email || '').toLowerCase().replace(/\./g, '.');
+  return em === DEV_EMAIL || em === 'hannes557766gmail.com';
+}
+function devModeOn() { try { return localStorage.getItem('bd_devmode') === '1'; } catch (e) { return false; } }
+function developerActive() { return isDevUser() && devModeOn(); }
+function unlockDeveloperLoadout() {
+  G.owned.player = Object.fromEntries(SKINS.map(item => [item.id, true]));
+  G.owned.blocks = Object.fromEntries(BLOCK_SKINS.map(item => [item.id, true]));
+  G.owned.bg = Object.fromEntries(BG_SKINS.map(item => [item.id, true]));
+  G.owned.music = Object.fromEntries(MUSIC_THEMES.map(item => [item.id, true]));
+  POWERS.forEach(power => { G.powers[power.id] = 5; });
+  G.saveShop();
+}
+function updateDevPanel() {
+  const panel = document.getElementById('devPanel');
+  if (!panel) return;
+  const visible = developerActive() && G.state === STATE.PLAY;
+  panel.style.display = visible ? 'block' : 'none';
+  const speedInput = document.getElementById('devSpeed');
+  const speedValue = document.getElementById('devSpeedValue');
+  const godButton = document.getElementById('devGod');
+  if (speedInput && document.activeElement !== speedInput) speedInput.value = developerSpeed;
+  if (speedValue) speedValue.textContent = developerSpeed.toFixed(2) + 'x';
+  if (godButton) {
+    godButton.textContent = developerGodMode ? 'GOD MODE: AN' : 'GOD MODE: AUS';
+    godButton.classList.toggle('on', developerGodMode);
+  }
+}
+function applyDevMode() {
+  const active = developerActive();
+  G.infinite = active;
+  if (active) unlockDeveloperLoadout();
+  else { developerGodMode = false; developerSpeed = 1; }
+  updateHUD();
+  updateDevPanel();
+}
+function toggleDevMode() {
+  if (!isDevUser()) return;
+  try { localStorage.setItem('bd_devmode', devModeOn() ? '0' : '1'); } catch (e) {}
+  applyDevMode();
+  updateAccountUI();
+  toast(devModeOn() ? '⚡ Developer Mode AN – unendlich Coins' : 'Developer Mode AUS');
+  play('level');
+  renderShop();
+}
+function toggleGodMode() {
+  if (!developerActive()) return;
+  developerGodMode = !developerGodMode;
+  updateDevPanel();
+  toast(developerGodMode ? 'GOD MODE AN' : 'GOD MODE AUS');
+}
+function kickPlayer(diff, key) {
+  if (!db || !isDevUser() || !devModeOn()) return;
+  const name = key;
+  db.ref('leaderboard/' + diff + '/' + key).remove()
+    .then(() => {
+      toast('Spieler entfernt: ' + name);
+      play('die');
+      loadLB(diff);
+    })
+    .catch(() => toast('Kick fehlgeschlagen'));
+}
+
+function syncPlayerRecords() {
+  if (!db) return;
+  const key = currentPlayerKey();
+  if (!key || key === 'guest_anon') return;
+  ['easy', 'normal', 'hard', 'extreme'].forEach(d => {
+    try {
+      db.ref('leaderboard/' + d + '/' + key).once('value', snap => {
+        const val = snap.val();
+        if (val && typeof val.score === 'number' && val.score > (G.bests[d] || 0)) {
+          G.bests[d] = val.score;
+          if (G.diff === d) G.best = val.score;
+          G.save();
+          updateHUD();
+        }
+      });
+    } catch (e) {}
+  });
+}
 
 function submitScore() {
-  if (!db) return;
-  const name = getPlayerName();
-  if (!name) return;
+  // Dev test runs never enter the public leaderboard.
+  if (!db || runIsDeveloper || developerActive()) return;
+  const name = currentPlayerName();
+  const key = currentPlayerKey();
+  if (!name || !key || key === 'guest_anon') return;
   const score = Math.floor(G.score);
   if (score <= 0) return;
-  const path = 'leaderboard/' + G.diff + '/' + sanitizeKey(name);
+  const path = 'leaderboard/' + G.diff + '/' + key;
   try {
     db.ref(path).transaction(cur => {
       if (!cur || score > (cur.score || 0)) return { name: name, score: score, ts: Date.now() };
@@ -562,26 +813,44 @@ function loadLB(diff) {
     return;
   }
   lbRef = db.ref('leaderboard/' + diff);
-  lbRef.orderByChild('score').limitToLast(10).on('value', snap => {
+  lbRef.orderByChild('score').limitToLast(50).on('value', snap => {
     const data = snap.val() || {};
-    const entries = Object.values(data).sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
+    const rawEntries = Object.entries(data).map(([key, en]) => Object.assign({ key: key }, en));
+    // Keep only the highest score for each player name. New records are also
+    // stored under the Firebase UID, so one account cannot create duplicates.
+    const uniquePlayers = new Map();
+    rawEntries.forEach(en => {
+      const identity = String(en.name || en.key).trim().toLocaleLowerCase('de-DE');
+      const previous = uniquePlayers.get(identity);
+      if (!previous || (en.score || 0) > (previous.score || 0)) uniquePlayers.set(identity, en);
+    });
+    const entries = Array.from(uniquePlayers.values())
+      .sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
     document.getElementById('lbStatus').textContent = entries.length + ' Einträge';
     if (!entries.length) {
       list.innerHTML = '<div class="lb-empty">Noch keine Einträge – spiel los!</div>';
       return;
     }
-    const me = getPlayerName();
+    const me = currentPlayerName();
     const medals = ['🥇', '🥈', '🥉'];
+    const dev = devModeOn() && isDevUser();
     list.innerHTML = '';
     entries.forEach((en, i) => {
       const row = document.createElement('div');
       row.className = 'lb-row' + (en.name === me ? ' me' : '');
       const rank = i < 3 ? medals[i] : (i + 1);
+      const kick = dev ? '<button class="lb-kick" data-key="' + escapeHtml(en.key) + '" title="Spieler kicken">✕</button>' : '';
       row.innerHTML = '<div class="lb-rank">' + rank + '</div>' +
         '<div class="lb-name">' + escapeHtml(en.name) + (en.name === me ? ' <span style="color:#23a45a;">(du)</span>' : '') + '</div>' +
-        '<div class="lb-score">' + Math.floor(en.score || 0).toLocaleString('de-DE') + '</div>';
+        '<div class="lb-score">' + Math.floor(en.score || 0).toLocaleString('de-DE') + '</div>' + kick;
       list.appendChild(row);
     });
+    if (dev) {
+      list.querySelectorAll('.lb-kick').forEach(b => b.addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('Diesen Spieler aus der Rangliste kicken?')) kickPlayer(lbDiff, b.dataset.key);
+      }));
+    }
   }, err => {
     document.getElementById('lbStatus').textContent = 'Offline';
     list.innerHTML = '<div class="lb-empty">Rangliste nicht erreichbar.<br>Prüfe die Firebase-Regeln.</div>';
@@ -605,6 +874,7 @@ function closeLB() {
 }
 function showNameModal() {
   document.getElementById('nameModal').classList.add('show');
+  document.getElementById('loginModal').classList.remove('show');
   setTimeout(() => { try { document.getElementById('nameInput').focus(); } catch (e) {} }, 60);
 }
 function saveName() {
@@ -613,7 +883,13 @@ function saveName() {
   if (!name) { inp.style.borderColor = '#ef4444'; play('die'); return; }
   inp.style.borderColor = '';
   setPlayerName(name);
+  if (auth && authUser) {
+    authUser.updateProfile({ displayName: name }).catch(() => {});
+  }
+  syncPlayerRecords();
+  updateAccountUI();
   document.getElementById('nameModal').classList.remove('show');
+  document.getElementById('loginModal').classList.remove('show');
   if (document.getElementById('lbModal').classList.contains('show')) loadLB(lbDiff);
   play('click');
 }
@@ -632,12 +908,226 @@ document.querySelectorAll('.lb-tab').forEach(t => t.addEventListener('click', ()
   play('click');
 }));
 
+// ---- FIREBASE AUTH ----
+let registerMode = false;
+function setLoginMsg(txt) {
+  const el = document.getElementById('loginMsg');
+  el.textContent = txt || '';
+}
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('show');
+  setTimeout(() => { try { document.getElementById('loginEmail').focus(); } catch (e) {} }, 60);
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('show');
+  setLoginMsg('');
+}
+function updateAccountUI() {
+  const btn = document.getElementById('accountBtn');
+  if (!btn) return;
+  if (authUser) {
+    const isAnon = authUser.isAnonymous;
+    btn.textContent = (isAnon ? 'GAST: ' : 'KONTO: ') + currentPlayerName().toUpperCase();
+    document.getElementById('loginDisplayName').textContent = currentPlayerName() + (isAnon ? ' (Gast)' : '');
+    document.getElementById('loginEmail2').textContent = isAnon ? 'Anonym angemeldet' : (authUser.email || '');
+    document.getElementById('loginAvatar').textContent = (currentPlayerName()[0] || '?').toUpperCase();
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('loginInfo').style.display = 'block';
+    const devBtn = document.getElementById('devBtn');
+    if (devBtn) {
+      const dev = isDevUser();
+      devBtn.style.display = dev ? 'block' : 'none';
+      devBtn.textContent = devModeOn() ? '⚡ DEVELOPER MODE: AN' : '⚡ DEVELOPER MODE: AUS';
+    }
+  } else {
+    btn.textContent = 'ANMELDEN';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('loginInfo').style.display = 'none';
+    document.getElementById('loginTitle').textContent = 'ANMELDEN';
+    document.getElementById('loginSub').textContent = '';
+    document.getElementById('loginSubmit').textContent = 'ANMELDEN';
+    document.getElementById('loginToggle').textContent = 'Konto erstellen';
+    document.getElementById('loginName').style.display = 'none';
+    const devBtn = document.getElementById('devBtn');
+    if (devBtn) devBtn.style.display = 'none';
+    registerMode = false;
+  }
+}
+function doLogin() {
+  if (!auth) { setLoginMsg('Firebase Auth nicht verfügbar.'); return; }
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  setLoginMsg('');
+  if (!email || !pass) { setLoginMsg('Bitte E-Mail und Passwort eingeben.'); return; }
+  if (registerMode) {
+    const name = document.getElementById('loginName').value.trim().slice(0, 14);
+    if (!name) { setLoginMsg('Bitte Spielername eingeben.'); return; }
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(cred => cred.user.updateProfile({ displayName: name }).then(() => {
+        setPlayerName(name);
+        closeLoginModal();
+        syncPlayerRecords();
+        toast('Willkommen, ' + name + '!');
+        play('level');
+      }))
+      .catch(err => setLoginMsg(friendlyAuthError(err)));
+  } else {
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(() => { closeLoginModal(); syncPlayerRecords(); toast('Eingeloggt!'); play('level'); })
+      .catch(err => setLoginMsg(friendlyAuthError(err)));
+  }
+}
+function loginGoogle() {
+  if (!auth) { setLoginMsg('Firebase Auth nicht verfügbar.'); return; }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(() => { closeLoginModal(); syncPlayerRecords(); toast('Eingeloggt!'); play('level'); })
+    .catch(err => setLoginMsg(friendlyAuthError(err)));
+}
+function loginAnon() {
+  if (!auth) {
+    closeLoginModal();
+    if (!getPlayerName()) showNameModal();
+    return;
+  }
+  auth.signInAnonymously()
+    .then(() => {
+      closeLoginModal();
+      if (!getPlayerName()) {
+        showNameModal();
+      } else {
+        syncPlayerRecords();
+        toast('Als Gast angemeldet');
+        play('level');
+      }
+    })
+    .catch(err => {
+      setLoginMsg(friendlyAuthError(err));
+      setTimeout(() => {
+        closeLoginModal();
+        if (!getPlayerName()) showNameModal();
+      }, 1000);
+    });
+}
+function logout() {
+  if (!auth) return;
+  auth.signOut()
+    .then(() => {
+      closeLoginModal();
+      setPlayerName('');
+      document.getElementById('menu').classList.add('show');
+      toast('Abgemeldet');
+      play('click');
+    })
+    .catch(() => {});
+}
+function friendlyAuthError(err) {
+  const c = (err && err.code) || '';
+  if (c.includes('user-not-found')) return 'Kein Konto mit dieser E-Mail.';
+  if (c.includes('wrong-password') || c.includes('invalid-credential')) return 'Falsches Passwort.';
+  if (c.includes('email-already-in-use')) return 'E-Mail ist bereits vergeben.';
+  if (c.includes('weak-password')) return 'Passwort zu schwach (min. 6 Zeichen).';
+  if (c.includes('invalid-email')) return 'Ungültige E-Mail.';
+  if (c.includes('popup-closed')) return 'Google-Fenster geschlossen.';
+  if (c.includes('unauthorized-domain')) return 'Domain nicht freigeschaltet.';
+  if (c.includes('operation-not-allowed') || c.includes('admin-restricted')) return 'Anonyme Anmeldung in Firebase aktivieren.';
+  return (err && err.message) || 'Fehler.';
+}
+
+if (auth) {
+  auth.onAuthStateChanged(user => {
+    authUser = user;
+    if (user) {
+      if (user.displayName) setPlayerName(user.displayName);
+      syncPlayerRecords();
+      applyDevMode();
+    } else {
+      applyDevMode();
+    }
+    updateAccountUI();
+    // Start-Flow: einmalig entscheiden
+    if (!window.__authStartHandled) {
+      window.__authStartHandled = true;
+      if (!user) showLoginModal();
+      else if (!getPlayerName()) showNameModal();
+      else syncPlayerRecords();
+    }
+  });
+} else {
+  window.__authStartHandled = true;
+  if (!getPlayerName()) showNameModal();
+  else syncPlayerRecords();
+}
+
+document.getElementById('accountBtn').addEventListener('click', () => {
+  document.getElementById('menu').classList.remove('show');
+  showLoginModal();
+  updateAccountUI();
+  play('click');
+});
+document.getElementById('loginBack').addEventListener('click', () => {
+  closeLoginModal();
+  document.getElementById('menu').classList.add('show');
+  play('click');
+});
+document.getElementById('loginSubmit').addEventListener('click', doLogin);
+document.getElementById('loginToggle').addEventListener('click', () => {
+  registerMode = !registerMode;
+  document.getElementById('loginName').style.display = registerMode ? 'block' : 'none';
+  document.getElementById('loginSubmit').textContent = registerMode ? 'KONTO ERSTELLEN' : 'ANMELDEN';
+  document.getElementById('loginToggle').textContent = registerMode ? 'Zurück zum Anmelden' : 'Konto erstellen';
+  document.getElementById('loginTitle').textContent = registerMode ? 'REGISTRIEREN' : 'ANMELDEN';
+  play('click');
+});
+document.getElementById('googleBtn').addEventListener('click', loginGoogle);
+document.getElementById('anonBtn').addEventListener('click', loginAnon);
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('renameBtn').addEventListener('click', () => {
+  document.getElementById('nameInput').value = getPlayerName();
+  closeLoginModal();
+  showNameModal();
+});
+document.getElementById('devBtn').addEventListener('click', e => { e.stopPropagation(); toggleDevMode(); });
+document.getElementById('devGod').addEventListener('click', e => { e.stopPropagation(); toggleGodMode(); });
+document.getElementById('devSpeed').addEventListener('input', e => {
+  if (!developerActive()) return;
+  developerSpeed = Math.max(0.25, Math.min(3, parseFloat(e.target.value) || 1));
+  updateDevPanel();
+});
+document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginName').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
 let AC = null;
+let musicTimer = null;
+let musicStep = 0;
 function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); }
 function tone(freq, dur, type, vol, slide) { if (!G.sound || !AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .02); }
 function play(type) { if (type === 'start') tone(360, .08, 'sine', .09, 520); if (type === 'pass') tone(720, .04, 'triangle', .035, 920); if (type === 'level') { tone(520, .1, 'sine', .1, 900); setTimeout(() => tone(760, .08, 'sine', .08, 1180), 80); } if (type === 'die') tone(180, .38, 'sawtooth', .18, 42); if (type === 'click') tone(420, .05, 'sine', .07, 520); if (type === 'coin') tone(880, .06, 'sine', .06, 1320); }
+function currentMusic() { return MUSIC_THEMES.find(m => m.id === G.musicTheme) || MUSIC_THEMES[0]; }
+function musicTone(freq, dur, type, vol) { if (!G.sound || !AC || !freq) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .02); }
+function stopMusicLoop() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+function startMusicLoop() {
+  stopMusicLoop();
+  if (!G.sound || !AC || G.state !== STATE.PLAY) return;
+  const m = currentMusic();
+  if (!m.notes.length) return;
+  musicStep = 0;
+  const interval = Math.max(110, (60 / m.tempo / 2) * 1000);
+  musicTimer = setInterval(() => {
+    if (!G.sound || G.state !== STATE.PLAY) { stopMusicLoop(); return; }
+    const theme = currentMusic();
+    if (!theme.notes.length) { stopMusicLoop(); return; }
+    const note = theme.notes[musicStep % theme.notes.length];
+    const accent = musicStep % 4 === 0;
+    musicTone(note, .12, theme.wave, accent ? .045 : .028);
+    if (accent) musicTone(note / 2, .18, 'triangle', .035);
+    musicStep++;
+  }, interval);
+}
+function restartMusicLoop() { if (G.state === STATE.PLAY) { audio(); startMusicLoop(); } }
 function start() { reset(); }
-function toggleSound() { G.sound = !G.sound; document.getElementById('soundBtn').textContent = G.sound ? 'ON' : 'OFF'; if (G.sound) { audio(); play('click'); } }
+function toggleSound() { G.sound = !G.sound; document.getElementById('soundBtn').textContent = G.sound ? 'ON' : 'OFF'; if (G.sound) { audio(); play('click'); startMusicLoop(); } else { stopMusicLoop(); } }
 document.getElementById('startBtn').addEventListener('click', start);
 document.getElementById('againBtn').addEventListener('click', start);
 document.getElementById('homeBtn').addEventListener('click', () => { G.state = STATE.MENU; document.getElementById('over').classList.remove('show'); document.getElementById('shop').classList.remove('show'); document.getElementById('menu').classList.add('show'); document.getElementById('hint').style.display = 'block'; play('click'); });
@@ -645,26 +1135,26 @@ document.getElementById('soundBtn').addEventListener('click', e => { e.stopPropa
 function typingInField() { const el = document.activeElement; return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'); }
 addEventListener('keydown', e => {
   if (typingInField()) return;
-  if (e.code === 'Space' && (G.state === STATE.OVER || document.getElementById('lbModal').classList.contains('show') || document.getElementById('shop').classList.contains('show') || document.getElementById('nameModal').classList.contains('show'))) {
-    if (G.state === STATE.OVER) start();
-    return;
-  }
   keys[e.code] = true;
   if (['ArrowLeft','ArrowRight','KeyA','KeyD','Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'KeyM') toggleSound();
+  if (e.code === 'Space' && G.state === STATE.OVER && !e.repeat) {
+    keys[e.code] = false;
+    start();
+    return;
+  }
   if (e.code === 'Enter' && G.state !== STATE.PLAY) start();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-addEventListener('pointermove', e => { if (e.pointerType === 'touch') { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; e.preventDefault(); } });
-addEventListener('pointerdown', e => { if (e.pointerType === 'touch') { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; audio(); e.preventDefault(); } });
+addEventListener('pointermove', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; e.preventDefault(); } });
+addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; mouse.x = e.clientX; mouse.y = e.clientY; audio(); e.preventDefault(); } });
 addEventListener('mousemove', e => { if (e.pointerType !== 'touch') { mouse.x = e.clientX; mouse.active = true; mouse.isTouch = false; } });
-addEventListener('pointerup', () => { mouse.isTouch = false; mouse.active = false; });
+addEventListener('pointerup', e => { if (e.pointerType === 'touch' && G.state === STATE.PLAY) { mouse.isTouch = true; mouse.active = true; } });
 addEventListener('pointercancel', () => { mouse.active = false; mouse.isTouch = false; });
 addEventListener('mouseleave', () => { mouse.active = false; mouse.isTouch = false; });
 let last = performance.now();
 function loop(now) { let dt = (now - last) / 1000; last = now; if (dt > .05) dt = .05; update(dt); draw(); requestAnimationFrame(loop); }
-G.load(); resize(); updateHUD();
-if (!getPlayerName()) showNameModal();
+G.load(); resize(); applyDevMode(); updateHUD();
 requestAnimationFrame(loop);
 </script>
 </body>
